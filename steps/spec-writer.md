@@ -30,7 +30,10 @@ driver's context - you do not invent intent.
    - **Call-site audit for shared-precondition changes.** If the spec changes a shared
      precondition or contract - a value that may now be missing/None, a guard that changes on a
      widely-used method - grep the touched method/attribute and list every affected call site as
-     its own design bullet, not just the primary one.
+     its own design bullet, not just the primary one. Then extend the audit to TESTS: enumerate
+     existing tests whose fixtures assume the state the new precondition now forecloses, and name
+     them in the Testing section. A production-call-site audit alone structurally misses tests
+     that encode a now-impossible state, which the new guard will break.
 5. Write BRIEF's content to `<project>/<ITEM>-brief.md` inside WORKSPACE, so the spec PR shows
    both the settled design and its formalization, and both are retained in the specs repo.
 6. Commit the spec and the brief on the branch.
