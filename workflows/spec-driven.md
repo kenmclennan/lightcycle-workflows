@@ -17,6 +17,21 @@ workspace:
   spec-open-pr      specs
   spec-await-merge  specs
 
+phase:
+  spec-writer       spec
+  spec-open-pr      spec
+  spec-await-merge  spec
+  write-code        code
+  code-open-pr      code
+  watch-ci          code
+  review-code       code
+  code-await-merge  code
+  cleanup           code
+  resolve-conflict  code
+  review-conflict   code
+  review-ci         code
+  handle-feedback   code
+
 nodes:
   spec-open-pr      open-pr
   spec-await-merge  await-merge
