@@ -14,4 +14,13 @@ steps/*.md             # the steps the workflows reference (shared within this b
 - Workflows and steps are discovered from the files - there is no explicit list to keep in sync.
 - A pulled version is an immutable, self-contained bundle: its workflows reference only the steps in this same bundle.
 
+## Workflows
+
+An item runs one workflow, named on its theme (`lc new theme --workflow lightcycle/<name>`). Each has its own doc with a flowchart and step-by-step description.
+
+| Workflow | Gates | Summary |
+| --- | --- | --- |
+| [`spec-driven`](docs/spec-driven.md) | spec PR, code PR | A brief becomes a formal spec on a spec PR; once merged, the same item is built, reviewed, and merged on a code PR. The default. |
+| [`bdd-driven`](docs/bdd-driven.md) | spec PR, feature PR, code PR | A behaviour-first variant: the spec is followed by executable gherkin `.feature` scenarios agreed on their own PR, which the code must then make pass. |
+
 This repo is decoupled from the engine's release cadence: `lc upgrade` updates the engine code; `lc workflow upgrade` updates these workflows. They share only the `contract` version.
