@@ -34,6 +34,11 @@ driver's context - you do not invent intent.
      existing tests whose fixtures assume the state the new precondition now forecloses, and name
      them in the Testing section. A production-call-site audit alone structurally misses tests
      that encode a now-impossible state, which the new guard will break.
+   - **Name non-obvious test-harness setup in the spec.** If verifying the change needs
+     scaffolding a coder would not guess - a `store.db` touch so a real adapter does not error, a
+     real tempdir for a backups/IO adapter, a specific fixture state - spell it out in the spec's
+     Testing/Harness section. A reviewer had to rediscover exactly this (a store.db touch plus a
+     real backups tempdir) mid-build; the spec should carry it so the coder does not.
 5. Write BRIEF's content to `<project>/<ITEM>-brief.md` inside WORKSPACE, so the spec PR shows
    both the settled design and its formalization, and both are retained in the specs repo.
 6. Commit the spec and the brief on the branch.
