@@ -28,7 +28,6 @@ phase:
   code-await-merge  code
   cleanup           code
   resolve-conflict  code
-  review-conflict   code
   review-ci         code
   handle-feedback   code
 
