@@ -1,3 +1,8 @@
+---
+summary: spec to merged - a co-designed brief becomes a spec PR, then the same item builds the code
+when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code
+---
+
 # Spec-driven
 
 One item, one id, spanning the whole arc: a brief from co-design becomes a formal spec on a spec
