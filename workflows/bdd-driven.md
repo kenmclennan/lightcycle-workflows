@@ -1,3 +1,8 @@
+---
+summary: spec, then frozen gherkin scenarios, then code that makes every scenario pass
+when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them
+---
+
 # BDD-driven
 
 One item, one id, spanning three phases and three review gates. A brief from co-design becomes a
