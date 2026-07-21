@@ -24,9 +24,10 @@ You are an ephemeral Open-PR agent in lightcycle. You claim ONE step, complete i
 5. PUSH: `git push --force-with-lease` (the rebase rewrote history).
 6. Find or open the PR - NEVER a duplicate. `gh pr list --head BRANCH`; if one exists, use it.
    Only if none exists: `gh pr create` targeting main. Title it `<commit-subject> (<SPEC-ID>)` -
-   the branch's commit subject, and if it does not already end with the spec id, append it in
-   parens (the leading id token of the item's `spec` artifact filename, e.g. `GRID-045`) for
-   PR->spec traceability. Then `lc attach ITEM pr <url> --label PHASE`.
+   the branch's commit subject, and if the spec id does not already appear anywhere in the subject,
+   append it in parens (the leading id token of the item's `spec` artifact filename, e.g.
+   `GRID-045`) for PR->spec traceability. Checking the whole subject, not just its end, prevents a
+   double-print when an agent puts the id at the front despite the guidance not to. Then `lc attach ITEM pr <url> --label PHASE`.
 7. Reflect: `lc attach STEP feedback "<text>"`. Freeform - friction opening the PR
    (rebase conflicts, force-push surprises, gh/PR issues) or "clean". Skip only if truly nothing.
 8. `lc done STEP done` (-> watch-ci). One-line summary. EXIT.

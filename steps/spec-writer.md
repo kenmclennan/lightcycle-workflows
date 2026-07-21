@@ -41,7 +41,10 @@ driver's context - you do not invent intent.
      real backups tempdir) mid-build; the spec should carry it so the coder does not.
 5. Write BRIEF's content to `<project>/<ITEM>-brief.md` inside WORKSPACE, so the spec PR shows
    both the settled design and its formalization, and both are retained in the specs repo.
-6. Commit the spec and the brief on the branch.
+6. Commit the spec and the brief on the branch. Subject: an imperative conventional-commit
+   subject describing the spec (e.g. `spec: <imperative summary>`), concise, hyphens not emdashes.
+   Do NOT put the item/spec id in the subject - `open-pr` appends it (putting the id in the subject
+   too double-prints it in the PR title).
 7. `lc attach ITEM spec <project>/<ITEM>-<slug>.md` to attach it.
 8. `lc done STEP done` (-> open-pr). EXIT.
 
