@@ -1,29 +1,29 @@
 ---
-summary: workflow design to merged bundle - a co-designed brief becomes a workflow-design spec PR, then the same item authors and gates the bundle
+summary: workflow design to merged bundle - a co-designed brief becomes a workflow-design spec PR, then the same item builds and gates the bundle
 when-to-use: building or updating a workflow bundle in this origin - a new workflow, an adaptation of an existing one, or a fork
 ---
 
 # Workflow-authoring
 
-One item, one id, spanning the whole arc: a brief from co-design becomes a formal workflow-design spec on a spec PR - a mermaid flowchart of the intended graph plus a description of each step, gate, and trigger - and once that PR merges the same item continues into the code build: author the bundle (invoking the `lightcycle:author-workflow` skill, per this repo's `CLAUDE.md`), open a code PR, watch CI, review, human merge. There is no workflow flip: the spec phase and the code phase are two positions of one workflow, identical in shape to `spec-driven` - only what happens inside each stage differs, carried by this repo's `CLAUDE.md` ("Authoring a workflow in this repo"), not by a specialized step file. `open-pr` and `await-merge` each appear twice (once per PR); the spec-phase steps take their worktree from the specs repo, the code phase from this repo. The human review gate is the spec PR itself for the design, and the code PR - gated by `lc workflow check` and `lc workflow simulate`, never a test suite - for the bundle.
+One item, one id, spanning the whole arc: a brief from co-design becomes a formal workflow-design spec on a spec PR - a mermaid flowchart of the intended graph plus a description of each step, gate, and trigger - and once that PR merges the same item continues into the code build: author the bundle, open a code PR, watch CI, review, human merge. There is no workflow flip: the spec phase and the code phase are two positions of one workflow. `design-workflow`, `build-workflow`, and `review-workflow` carry the workflow-authoring craft (the design mermaid convention and grammar, the full grammar and hook catalog, the QA and agnostic-rule checklist) inline, so this bundle works from being pulled alone - no plugin, no target repo `CLAUDE.md`, no engine source. `open-pr` and `await-merge` each appear twice (once per PR) and stay generic PR/CI machinery, reused unchanged; the spec-phase steps take their worktree from the specs repo, the code phase from the target workflow-origin repo. The human review gate is the spec PR itself for the design, and the code PR - gated by `lc workflow check` and `lc workflow simulate`, never a test suite - for the bundle.
 
-entry: spec-writer
+entry: design-workflow
 
 requires: brief repo
 
 workspace:
-  spec-writer       specs
+  design-workflow   specs
   spec-open-pr      specs
   spec-await-merge  specs
 
 phase:
-  spec-writer       spec
+  design-workflow   spec
   spec-open-pr      spec
   spec-await-merge  spec
-  write-code        code
+  build-workflow    code
   code-open-pr      code
   watch-ci          code
-  review-code       code
+  review-workflow   code
   code-await-merge  code
   cleanup           code
   resolve-conflict  code
@@ -37,19 +37,19 @@ nodes:
   code-await-merge  await-merge
 
 edges:
-  spec-writer       done         spec-open-pr
+  design-workflow   done         spec-open-pr
   spec-open-pr      done         spec-await-merge
-  spec-await-merge  changes      spec-writer
-  spec-await-merge  spec-merged  write-code
-  write-code        done         code-open-pr
+  spec-await-merge  changes      design-workflow
+  spec-await-merge  spec-merged  build-workflow
+  build-workflow    done         code-open-pr
   code-open-pr      done         watch-ci
   code-open-pr      conflicted   resolve-conflict
-  watch-ci          done         review-code
-  watch-ci          ci-failed    write-code
-  review-code       done         code-await-merge
-  review-code       rejected     write-code
+  watch-ci          done         review-workflow
+  watch-ci          ci-failed    build-workflow
+  review-workflow   done         code-await-merge
+  review-workflow   rejected     build-workflow
   code-await-merge  merged       cleanup
-  code-await-merge  changes      write-code
+  code-await-merge  changes      build-workflow
   code-await-merge  conflicted   resolve-conflict
   code-await-merge  gave-up      review-conflict
   resolve-conflict  resolved     code-open-pr
@@ -72,8 +72,8 @@ hooks:
 
 signals:
   spec-await-merge  resets            changes
-  review-code       review_rounds     rejected
-  review-code       resets            rejected
+  review-workflow   review_rounds     rejected
+  review-workflow   resets            rejected
   code-open-pr      conflicts         ~conflict
   watch-ci          resets            ci-failed
   code-await-merge  resets            changes
