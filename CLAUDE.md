@@ -8,7 +8,7 @@ lightcycle is four coordinated repos (engine / workflows / specs / plugin); this
 
 The engine _pulls_ these workflows; a change to the engine's contract, the workflow grammar, or the audit/hook model usually spans several repos.
 
-_Cross-repo process (PR-flow, coupled changes) is a driver operation - see the engine's `prompts/driver.md`._
+_Cross-repo process (PR-flow, coupled changes) is a driver operation - see the `driver` skill (lightcycle-plugin)._
 
 ## Conventions
 
