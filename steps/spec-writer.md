@@ -27,13 +27,20 @@ driver's context - you do not invent intent.
    It needs two things: clarity for the agents that build and review it, and something a human can
    review on the eventual PR. Hyphens not emdashes; format with prettier
    (`npx prettier --write`).
-   - **Call-site audit for shared-precondition changes.** If the spec changes a shared
-     precondition or contract - a value that may now be missing/None, a guard that changes on a
-     widely-used method - grep the touched method/attribute and list every affected call site as
-     its own design bullet, not just the primary one. Then extend the audit to TESTS: enumerate
-     existing tests whose fixtures assume the state the new precondition now forecloses, and name
-     them in the Testing section. A production-call-site audit alone structurally misses tests
-     that encode a now-impossible state, which the new guard will break.
+   - **Call-site audit for shared-precondition changes - prove the list is exhaustive.** If the
+     spec changes a shared precondition, contract, resolution path, or a signature others depend on
+     - a value that may now be missing/None, a guard on a widely-used method, a method added to an
+     interface/port, or a behaviour a call path used to have - grep for the SHAPE being changed and
+     verify the enumeration is complete before treating it as ground truth, rather than naming only
+     the sites you already know. Cover three categories, two of which the obvious grep misses:
+     (1) production call sites of the changed method/attribute; (2) every fake/double/adapter that
+     implements the changed interface or port - each must gain the new/changed method or it breaks,
+     and a grep for the method NAME does not surface a fake that lacks it, so grep the interface,
+     the abstract base, or its sibling methods instead; (3) existing tests that assume the OLD
+     behaviour - fixtures encoding a state the change forecloses, or tests asserting the pre-change
+     outcome of a path this alters. List each affected site as a design bullet and name the tests
+     in the Testing section; a production-call-site audit alone structurally misses (2) and (3),
+     which then break mid-build.
    - **Name non-obvious test-harness setup in the spec.** If verifying the change needs
      scaffolding a coder would not guess - a `store.db` touch so a real adapter does not error, a
      real tempdir for a backups/IO adapter, a specific fixture state - spell it out in the spec's
