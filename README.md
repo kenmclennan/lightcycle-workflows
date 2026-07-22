@@ -22,5 +22,6 @@ An item runs one workflow, named on its theme (`lc new theme --workflow lightcyc
 | --- | --- | --- |
 | [`spec-driven`](docs/spec-driven.md) | spec PR, code PR | A brief becomes a formal spec on a spec PR; once merged, the same item is built, reviewed, and merged on a code PR. The default. |
 | [`bdd-driven`](docs/bdd-driven.md) | spec PR, feature PR, code PR | A behaviour-first variant: the spec is followed by executable gherkin `.feature` scenarios agreed on their own PR, which the code must then make pass. |
+| [`workflow-authoring`](docs/workflow-authoring.md) | spec PR, code PR | A brief becomes a workflow-design spec (mermaid + step/gate/trigger descriptions) on a spec PR; once merged, the same item authors the bundle and gets it merged on a code PR, gated by the simulator. |
 
 This repo is decoupled from the engine's release cadence: `lc upgrade` updates the engine code; `lc workflow upgrade` updates these workflows. They share only the `contract` version.
