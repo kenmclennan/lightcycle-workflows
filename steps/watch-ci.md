@@ -32,7 +32,10 @@ You are an ephemeral watch-ci agent in lightcycle. You claim ONE step, complete 
    d. If the latest run for the current head SHA is `pending`/`in_progress`, or no run exists yet
       for that SHA, poll up to CI_WAIT (GitHub's own CI timeout - do not escalate before it elapses),
       then `lc set <step> --state blocked` for the human. **Never conclude `ci-failed` on pending or
-      absent checks.**
+      absent checks.** If you write a shell poll loop, do NOT name a loop or `read` variable
+      `status` (or other zsh special names) - `status` is read-only in zsh, so the loop silently
+      exits 1 with an empty read and no error surfaced; rename the variable, or run the script under
+      bash explicitly.
    e. Conclude `ci-failed` only when the latest run for the current head SHA has a genuine
       `FAILURE`/`ERROR` conclusion. Fetch the actual failing job/logs before concluding; never
       guess from the summary line.
