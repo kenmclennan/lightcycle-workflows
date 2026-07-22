@@ -4,12 +4,7 @@ This repo is the built-in `lightcycle` workflow **origin** - the `lc` engine pul
 
 ## The lightcycle repos
 
-lightcycle is four coordinated repos. A change that spans them lands in tandem.
-
-- **lightcycle** - the `lc` engine: CLI, agent pool, and store. Pipx-installed, zero runtime deps, workflow-agnostic. The only home for engine code.
-- **lightcycle-workflows** (this repo) - the built-in workflow origin: pullable bundles (`source.toml` + `workflows/*.md` + `steps/*.md`) the engine turns into sha-pinned, per-item pins. Content, not engine code.
-- **lightcycle-specs** - design docs (`lightcycle/*.md`) and briefs (`briefs/*.md`). Specs land there through the spec-PR review gate before code is built.
-- **lightcycle-plugin** - the Claude Code companion: a marketplace repo whose SessionStart hook bootstraps the engine (pipx) and whose skills (e.g. `author-workflow`) help you work with it.
+lightcycle is four coordinated repos (engine / workflows / specs / plugin); this is the built-in workflow origin - see `lightcycle/CLAUDE.md` for the full map. A change that spans them lands in tandem.
 
 The engine _pulls_ these workflows; a change to the engine's contract, the workflow grammar, or the audit/hook model usually spans several repos.
 

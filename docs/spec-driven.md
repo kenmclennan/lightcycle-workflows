@@ -2,7 +2,7 @@
 
 **One item, one id, from brief to merged code, through two PRs.** A brief settled in co-design becomes a formal spec on a spec PR; once that merges, the same item continues into the code build. The spec PR is the single human review gate before code; the code PR is the merge gate.
 
-**Use it when** the design is best captured as a prose spec that a human reviews and merges before any code is written - the default for most work.
+**Use it when** the design is best captured as a prose spec that a human reviews and merges before any code is written.
 
 **Phases:** `spec` (specs repo) then `code` (project repo). `open-pr` and `await-merge` appear once per phase.
 
