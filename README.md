@@ -20,7 +20,7 @@ An item runs one workflow, named on its theme (`lc new theme --workflow lightcyc
 
 | Workflow | Gates | Summary |
 | --- | --- | --- |
-| [`spec-driven`](docs/spec-driven.md) | spec PR, code PR | A brief becomes a formal spec on a spec PR; once merged, the same item is built, reviewed, and merged on a code PR. The default. |
+| [`spec-driven`](docs/spec-driven.md) | spec PR, code PR | A brief becomes a formal spec on a spec PR; once merged, the same item is built, reviewed, and merged on a code PR. |
 | [`bdd-driven`](docs/bdd-driven.md) | spec PR, feature PR, code PR | A behaviour-first variant: the spec is followed by executable gherkin `.feature` scenarios agreed on their own PR, which the code must then make pass. |
 | [`workflow-authoring`](docs/workflow-authoring.md) | spec PR, code PR | A brief becomes a workflow-design spec (mermaid + step/gate/trigger descriptions) on a spec PR; once merged, the same item authors the bundle and gets it merged on a code PR, gated by the simulator. |
 
