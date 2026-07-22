@@ -20,7 +20,7 @@ _Cross-repo process (PR-flow, coupled changes) is a driver operation - see the e
 - A source is **self-contained**: `source.toml` (with a required `contract`), `workflows/*.md` (the flow graph - entry / requires / workspace / nodes / edges / hooks / signals), and `steps/*.md` (role prompts with `model` + `accepts`/`produces`). Steps are shared _within_ a bundle, copied _across_ origins.
 - The engine defines the grammar and the hook catalog; the `author-workflow` skill (in lightcycle-plugin) is the guide. `lc workflow add` and `lc workflow check` validate a bundle - fix what they name, do not work around them.
 - The periodic retro audit is an **engine service**, not a workflow step - do not wire it here.
-- Hyphens not emdashes. Format markdown with `prettier --prose-wrap=never`.
+- Hyphens not emdashes. Format markdown with `prettier --prose-wrap=never` - except `workflows/*.md`: its `entry`/`requires`/`workspace`/`phase`/`nodes`/`edges`/`hooks`/`signals` block is significant-whitespace-aligned, not prose, and prettier collapses it onto unreadable single lines. Never run prettier on a `workflows/*.md` file; hand-edit it and match the existing column alignment.
 
 ## Authoring a workflow in this repo
 
