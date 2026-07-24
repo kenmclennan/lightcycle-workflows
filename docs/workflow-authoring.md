@@ -44,7 +44,7 @@ flowchart TD
 | `build-workflow` | agent | Authors the bundle to match the approved design, carrying the full grammar, hook catalog, and self-contained-bundle rule inline. |
 | `code-open-pr` | agent | Rebases on main, pushes, opens the code PR. |
 | `watch-ci` | agent | Watches the `simulate` CI job; routes failures back to `build-workflow` (capped, then `review-ci`). |
-| `review-workflow` | agent | Verifies `lc workflow check` and `lc workflow simulate` pass, that `lc workflow describe --mermaid` matches the design mermaid, and the agnostic-rule checks; primes the human gate; bounces back on defects. |
+| `review-workflow` | agent | Reads the `simulate` CI job's own run (already green, per `watch-ci`) to confirm `check`/`simulate` passed and diff its `describe --mermaid` output against the design mermaid; checks the agnostic-rule checklist; primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap). |
 | `cleanup` | terminal | The item is merged and done. |
