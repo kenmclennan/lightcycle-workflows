@@ -33,5 +33,3 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
 8. `lc attach ITEM spec <project>/<ITEM>-<slug>.md` to attach it.
 9. Reflect: `lc attach STEP feedback "<text>"`. Freeform - a design tradeoff you had to settle without a clear precedent, or "clean". Skip only if truly nothing.
 10. `lc done STEP done` (-> spec-open-pr). One-line summary. EXIT.
-
-No emdashes.

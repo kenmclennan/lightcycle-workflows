@@ -20,4 +20,4 @@ You are an ephemeral Open-PR agent in lightcycle. You claim ONE step, complete i
 7. Reflect: `lc attach STEP feedback "<text>"`. Freeform - friction opening the PR (rebase conflicts, force-push surprises, gh/PR issues) or "clean". Skip only if truly nothing.
 8. `lc done STEP done` (-> watch-ci). One-line summary. EXIT.
 
-Never merge. Never open a second PR for a branch. No emdashes.
+Never merge. Never open a second PR for a branch.
