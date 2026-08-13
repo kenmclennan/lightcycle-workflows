@@ -7,7 +7,7 @@ when-to-use: behaviour worth pinning as an executable acceptance contract before
 
 One item, one id, spanning three phases and three review gates. A brief from co-design becomes a
 formal spec on a spec PR; once that merges, a feature-writer derives executable gherkin `.feature`
-scenarios (tagged `@wip` so CI skips them) on a feature PR that a review-features agent primes for
+scenarios (tagged `@wip`, gherkin only so nothing collects them yet) on a feature PR that a review-features agent primes for
 the human; once that merges, implement-features writes the code and step definitions to make every
 scenario pass - implementing to the spec, never editing a scenario, un-`@wip`-ing each as it goes
 green - opens a code PR, watches CI, is reviewed, and the human merges. There is no workflow flip:
