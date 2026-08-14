@@ -48,17 +48,17 @@ edges:
   spec-await-merge  changes      spec-writer
   spec-await-merge  spec-merged  write-code
   write-code        done         code-open-pr
-  code-open-pr      done         watch-ci
+  code-open-pr      done         watch-ci          primary
   code-open-pr      conflicted   resolve-conflict
   watch-ci          done         review-code
   watch-ci          ci-failed    write-code
-  review-code       done         code-await-merge
+  review-code       done         code-await-merge  primary
   review-code       rejected     write-code
   code-await-merge  merged       cleanup
   code-await-merge  changes      write-code
   code-await-merge  conflicted   resolve-conflict
   code-await-merge  gave-up      review-conflict
-  resolve-conflict  resolved     code-open-pr
+  resolve-conflict  resolved     code-open-pr      primary
   resolve-conflict  escalate     review-conflict
 
 hooks:
