@@ -42,17 +42,17 @@ edges:
   spec-await-merge  changes      design-workflow
   spec-await-merge  spec-merged  build-workflow
   build-workflow    done         code-open-pr
-  code-open-pr      done         watch-ci
+  code-open-pr      done         watch-ci          primary
   code-open-pr      conflicted   resolve-conflict
   watch-ci          done         review-workflow
   watch-ci          ci-failed    build-workflow
-  review-workflow   done         code-await-merge
+  review-workflow   done         code-await-merge  primary
   review-workflow   rejected     build-workflow
   code-await-merge  merged       cleanup
   code-await-merge  changes      build-workflow
   code-await-merge  conflicted   resolve-conflict
   code-await-merge  gave-up      review-conflict
-  resolve-conflict  resolved     code-open-pr
+  resolve-conflict  resolved     code-open-pr      primary
   resolve-conflict  escalate     review-conflict
 
 hooks:
