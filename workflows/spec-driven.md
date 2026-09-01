@@ -36,6 +36,21 @@ phase:
   review-ci         code
   handle-feedback   code
 
+display:
+  spec-writer       Writing the spec
+  spec-open-pr      Opening spec PR
+  spec-await-merge  Review the spec
+  write-code        Coding
+  code-open-pr      Opening code PR
+  watch-ci          Watching CI
+  review-code       Reviewing code
+  code-await-merge  Review the PR
+  cleanup           Tidying up
+  resolve-conflict  Resolving conflict
+  review-conflict   Resolve conflict
+  review-ci         CI needs a call
+  handle-feedback   Reading feedback
+
 nodes:
   spec-open-pr      open-pr
   spec-await-merge  await-merge
