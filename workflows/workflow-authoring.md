@@ -30,6 +30,21 @@ phase:
   review-ci         code
   handle-feedback   code
 
+display:
+  design-workflow   Designing workflow
+  spec-open-pr      Opening spec PR
+  spec-await-merge  Review the spec
+  build-workflow    Building workflow
+  code-open-pr      Opening code PR
+  watch-ci          Watching CI
+  review-workflow   Checking workflow
+  code-await-merge  Review the PR
+  cleanup           Tidying up
+  resolve-conflict  Resolving conflict
+  review-conflict   Resolve conflict
+  review-ci         CI needs a call
+  handle-feedback   Reading feedback
+
 nodes:
   spec-open-pr      open-pr
   spec-await-merge  await-merge
