@@ -19,7 +19,7 @@ reviewed against.
 
 entry: spec-writer
 
-requires: brief repo
+requires: repo
 
 workspace:
   spec-writer          specs
