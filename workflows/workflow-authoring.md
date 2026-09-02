@@ -9,7 +9,7 @@ One item, one id, spanning the whole arc: a brief from co-design becomes a forma
 
 entry: design-workflow
 
-requires: brief repo
+requires: repo
 
 workspace:
   design-workflow   specs
