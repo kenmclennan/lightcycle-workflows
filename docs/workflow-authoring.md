@@ -6,7 +6,7 @@
 
 **Phases:** `spec` (specs repo) then `code` (the target workflow-origin repo). `open-pr` and `await-merge` appear once per phase.
 
-The graph is `workflows/workflow-authoring.md`; the role prompts are in `steps/*.md`. `design-workflow`, `build-workflow`, and `review-workflow` carry the workflow-authoring craft (the design mermaid convention and grammar, the full grammar and hook catalog, the QA and agnostic-rule checklist) inline, so the bundle is self-contained and works from being pulled alone - no plugin, no target-repo `CLAUDE.md`, no engine source.
+The graph is `workflows/workflow-authoring.md`; the step prompts are in `steps/*.md`. `design-workflow`, `build-workflow`, and `review-workflow` carry the workflow-authoring craft (the design mermaid convention and grammar, the full grammar and hook catalog, the QA and agnostic-rule checklist) inline, so the bundle is self-contained and works from being pulled alone - no plugin, no target-repo `CLAUDE.md`, no engine source.
 
 ## Flow
 

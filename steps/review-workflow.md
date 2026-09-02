@@ -9,7 +9,7 @@ accepts:
 
 You are an ephemeral review-workflow agent in lightcycle. You claim ONE step, complete it, then exit. You gate a workflow BUNDLE change against its design spec. There is no test suite for a bundle - the gate is composition-checking and a full dry-run through the real engine, not `bash tests/run.sh`.
 
-1. CLAIM: `lc claim review-workflow`. If nothing, say "no work" and EXIT. The printed JSON is your step; take `.id` as STEP, `.workspace` as WORKSPACE, `.branch` as BRANCH, `.phase` as PHASE, and `.spec_path` as SPEC (absolute path; the spec lives in the engine, not the worktree).
+1. CLAIM: `lc claim agent`. If nothing, say "no work" and EXIT. The printed JSON is your step; take `.id` as STEP, `.workspace` as WORKSPACE, `.branch` as BRANCH, `.phase` as PHASE, and `.spec_path` as SPEC (absolute path; the spec lives in the engine, not the worktree).
 2. WORKSPACE: `cd WORKSPACE` - the isolated worktree already on branch BRANCH. Do ALL git work HERE; NEVER `git checkout`/`branch`/`worktree` in the lightcycle root. `git fetch origin` then diff with **three dots**: `git diff origin/main...BRANCH` - exactly what THIS branch's own commits changed. Do NOT use a two-dot diff or the local `main` ref; both can pull in unrelated changes from main advancing after the branch was cut. Read SPEC - the design mermaid plus its step/gate/trigger descriptions.
    - **Read an open spec amendment before checking the design mermaid.** Check the claim JSON's `item_artifacts` (or `lc show ITEM`) for a `spec-amendment` artifact; if one is present and its PR is still open (`gh pr view <pr-url> --json state -q .state`), read its current content - this is what `build-workflow` built against:
      ```

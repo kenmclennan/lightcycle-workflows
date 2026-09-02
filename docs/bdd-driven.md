@@ -6,7 +6,7 @@
 
 **Phases:** `spec` (specs repo), then `feature` and `code` (both the project repo, as two distinct phases so each gets its own PR and branch). Scenarios are tagged `@wip` so CI skips them until the code exists; `implement-features` removes the tag as each scenario goes green.
 
-The graph is `workflows/bdd-driven.md`; the role prompts are in `steps/*.md`. The spec and code phases reuse spec-driven's steps; only the feature phase and the coder differ.
+The graph is `workflows/bdd-driven.md`; the step prompts are in `steps/*.md`. The spec and code phases reuse spec-driven's steps; only the feature phase and the coder differ.
 
 ## Flow
 
