@@ -6,7 +6,7 @@
 
 **Phases:** `spec` (specs repo) then `code` (project repo). `open-pr` and `await-merge` appear once per phase.
 
-The graph is `workflows/spec-driven.md`; the role prompts are in `steps/*.md`.
+The graph is `workflows/spec-driven.md`; the step prompts are in `steps/*.md`.
 
 ## Flow
 
