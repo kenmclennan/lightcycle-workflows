@@ -16,7 +16,7 @@ steps/*.md             # the steps the workflows reference (shared within this b
 
 ## Workflows
 
-An item runs one workflow, named on its theme (`lc new theme --workflow lightcycle/<name>`). Each has its own doc with a flowchart and step-by-step description.
+An item runs one workflow, named on the item (`lc new item "<title>" --workflow lightcycle/<name>`), or inherited from its parent item. Each has its own doc with a flowchart and step-by-step description.
 
 | Workflow | Gates | Summary |
 | --- | --- | --- |
