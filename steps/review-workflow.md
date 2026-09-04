@@ -34,7 +34,7 @@ You are an ephemeral review-workflow agent in lightcycle. You claim ONE step, co
 7. Outcome: pass or fail, first resolve the PR - the claim JSON's `.pr` (this pass's phase run holds it); if absent, `gh pr list --head BRANCH --json url -q '.[0].url'`. Re-pull head first: `git fetch origin` again immediately before posting, and if `origin/BRANCH` advanced since the diff you reviewed, re-check the changed files. Post `gh pr comment <pr> --body "<!-- lc --> ..."` before (or as part of) the `lc done`/`lc set` call:
    - Pass: comment names what was checked (`check`/`simulate`/`describe --mermaid` against SPEC's design mermaid, the agnostic-rule checks) and the clean verdict, THEN `lc done STEP done`.
    - Fail: comment states what needs to change, THEN `lc done STEP rejected --note "<what to change>"` (forwards onto the next `build-workflow` step).
-   - Cannot review -> `lc set STEP --state blocked --needs "<...>"`, no PR comment.
+   - Cannot review -> `lc set STEP --state blocked --needs "<...>" --reason "<what happened that led here>"`, no PR comment.
 8. One-line summary. EXIT.
 
 Verify, do not approve on plausibility.
