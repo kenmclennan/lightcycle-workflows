@@ -22,54 +22,62 @@ entry: spec-writer
 requires: repo
 
 workspace:
-  spec-writer          specs
-  spec-open-pr         specs
-  spec-await-merge     specs
+  spec-writer           specs
+  spec-open-pr          specs
+  spec-await-merge      specs
+  spec-handle-feedback  specs
 
 phase:
-  spec-writer          spec
-  spec-open-pr         spec
-  spec-await-merge     spec
-  feature-writer       feature
-  feature-open-pr      feature
-  review-features      feature
-  feature-await-merge  feature
-  implement-features   code
-  code-open-pr         code
-  watch-ci             code
-  review-code          code
-  code-await-merge     code
-  cleanup              code
-  resolve-conflict     code
-  review-ci            code
-  handle-feedback      code
+  spec-writer              spec
+  spec-open-pr             spec
+  spec-await-merge         spec
+  spec-handle-feedback     spec
+  feature-writer           feature
+  feature-open-pr          feature
+  review-features          feature
+  feature-await-merge      feature
+  feature-handle-feedback  feature
+  implement-features       code
+  code-open-pr             code
+  watch-ci                 code
+  review-code              code
+  code-await-merge         code
+  cleanup                  code
+  resolve-conflict         code
+  review-ci                code
+  code-handle-feedback     code
 
 display:
-  spec-writer          Writing the spec
-  spec-open-pr         Opening spec PR
-  spec-await-merge     Review the spec
-  feature-writer       Writing scenarios
-  feature-open-pr      Opening feature PR
-  review-features      Checking scenarios
-  feature-await-merge  Review scenarios
-  implement-features   Coding
-  code-open-pr         Opening code PR
-  watch-ci             Watching CI
-  review-code          Reviewing code
-  code-await-merge     Review the PR
-  cleanup              Tidying up
-  resolve-conflict     Resolving conflict
-  review-conflict      Resolve conflict
-  review-ci            CI needs a call
-  handle-feedback      Reading feedback
+  spec-writer              Writing the spec
+  spec-open-pr             Opening spec PR
+  spec-await-merge         Review the spec
+  spec-handle-feedback     Reading feedback
+  feature-writer           Writing scenarios
+  feature-open-pr          Opening feature PR
+  review-features          Checking scenarios
+  feature-await-merge      Review scenarios
+  feature-handle-feedback  Reading feedback
+  implement-features       Coding
+  code-open-pr             Opening code PR
+  watch-ci                 Watching CI
+  review-code              Reviewing code
+  code-await-merge         Review the PR
+  cleanup                  Tidying up
+  resolve-conflict         Resolving conflict
+  review-conflict          Resolve conflict
+  review-ci                CI needs a call
+  code-handle-feedback     Reading feedback
 
 nodes:
-  spec-open-pr         open-pr
-  spec-await-merge     await-merge
-  feature-open-pr      open-pr
-  feature-await-merge  await-merge
-  code-open-pr         open-pr
-  code-await-merge     await-merge
+  spec-open-pr             open-pr
+  spec-await-merge         await-merge
+  spec-handle-feedback     handle-feedback
+  feature-open-pr          open-pr
+  feature-await-merge      await-merge
+  feature-handle-feedback  handle-feedback
+  code-open-pr             open-pr
+  code-await-merge         await-merge
+  code-handle-feedback     handle-feedback
 
 edges:
   spec-writer          done             spec-open-pr
@@ -103,9 +111,9 @@ hooks:
   pr_close              spec-await-merge     abandoned
   pr_close              feature-await-merge  abandoned
   pr_close              code-await-merge     abandoned
-  pr_feedback           spec-await-merge     handle-feedback
-  pr_feedback           feature-await-merge  handle-feedback
-  pr_feedback           code-await-merge     handle-feedback
+  pr_feedback           spec-await-merge     spec-handle-feedback
+  pr_feedback           feature-await-merge  feature-handle-feedback
+  pr_feedback           code-await-merge     code-handle-feedback
   pr_conflict           code-await-merge     conflicted
   pr_conflict_cap       code-await-merge     3
   pr_conflict_escalate  code-await-merge     gave-up
