@@ -21,7 +21,8 @@ flowchart TD
     end
     SAM -->|spec-merged| FW["feature-writer"]
     subgraph F ["feature phase (project repo)"]
-        FW --> FOP["feature-open-pr"] --> RF["review-features"]
+        FW --> FOP["feature-open-pr"] --> FWCI["feature-watch-ci"] --> RF["review-features"]
+        FWCI -->|ci-failed| FW
         RF -->|rejected| FW
         RF -->|done| FAM{{"feature-await-merge"}}
         FAM -->|changes| FW
@@ -49,6 +50,7 @@ flowchart TD
 | `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
 | `feature-open-pr` | agent | Opens the feature PR. |
+| `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failures back to `feature-writer` (capped, then `feature-review-ci`). |
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
