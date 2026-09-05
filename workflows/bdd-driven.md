@@ -34,8 +34,10 @@ phase:
   spec-handle-feedback     spec
   feature-writer           feature
   feature-open-pr          feature
+  feature-watch-ci         feature
   review-features          feature
   feature-await-merge      feature
+  feature-review-ci        feature
   feature-handle-feedback  feature
   implement-features       code
   code-open-pr             code
@@ -54,8 +56,10 @@ display:
   spec-handle-feedback     Reading feedback
   feature-writer           Writing scenarios
   feature-open-pr          Opening feature PR
+  feature-watch-ci         Watching CI (scenarios)
   review-features          Checking scenarios
   feature-await-merge      Review scenarios
+  feature-review-ci        CI needs a call (scenarios)
   feature-handle-feedback  Reading feedback
   implement-features       Coding
   code-open-pr             Opening code PR
@@ -73,7 +77,9 @@ nodes:
   spec-await-merge         await-merge
   spec-handle-feedback     handle-feedback
   feature-open-pr          open-pr
+  feature-watch-ci         watch-ci
   feature-await-merge      await-merge
+  feature-review-ci        review-ci
   feature-handle-feedback  handle-feedback
   code-open-pr             open-pr
   code-await-merge         await-merge
@@ -85,7 +91,9 @@ edges:
   spec-await-merge     changes          spec-writer
   spec-await-merge     spec-merged      feature-writer
   feature-writer       done             feature-open-pr
-  feature-open-pr      done             review-features
+  feature-open-pr      done             feature-watch-ci     primary
+  feature-watch-ci     done             review-features
+  feature-watch-ci     ci-failed        feature-writer
   review-features      done             feature-await-merge  primary
   review-features      rejected         feature-writer
   feature-await-merge  changes          feature-writer
@@ -118,6 +126,7 @@ hooks:
   pr_conflict_cap       code-await-merge     3
   pr_conflict_escalate  code-await-merge     gave-up
   ci_failed_cap         watch-ci             ci-failed  3  review-ci
+  ci_failed_cap         feature-watch-ci     ci-failed  3  feature-review-ci
   mention_token         spec-await-merge     @lc
   mention_token         feature-await-merge  @lc
   mention_token         code-await-merge     @lc
@@ -128,6 +137,7 @@ signals:
   review-features      review_rounds     rejected
   review-features      resets            rejected
   feature-await-merge  resets            changes
+  feature-watch-ci     resets            ci-failed
   review-code          review_rounds     rejected
   review-code          resets            rejected
   code-open-pr         conflicts         ~conflict
