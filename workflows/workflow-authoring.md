@@ -35,13 +35,13 @@ phase:
 display:
   design-workflow       Designing workflow
   spec-open-pr          Opening spec PR
-  spec-await-merge      Review the spec
+  spec-await-merge      Review spec
   spec-handle-feedback  Reading feedback
   build-workflow        Building workflow
   code-open-pr          Opening code PR
   watch-ci              Watching CI
   review-workflow       Checking workflow
-  code-await-merge      Review the PR
+  code-await-merge      Review PR
   cleanup               Tidying up
   resolve-conflict      Resolving conflict
   review-conflict       Resolve conflict
