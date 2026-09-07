@@ -41,12 +41,13 @@ You are an ephemeral write-code agent in lightcycle. You claim ONE step, complet
       ## Amendment (<STEP>, <YYYY-MM-DD>)
 
       Supersedes: <what it overrides, matching the SPEC CHANGE: note's first line>
+
       Source: <PR comment/thread url that authorized this>
 
       <the new decision, in the detail a coder or reviewer needs to build/check it>
       ```
 
-      `Source:` must be the real, resolvable url located above - never a placeholder, never your own paraphrase of "a human asked for this" with no url behind it. Format with `npx prettier --prose-wrap=never --write` per this repo's convention. Commit (`docs(spec): amend <ITEM> - <short reason>`), push the branch, and (first time only) open the PR via REST - `gh api repos/{SPECS_OWNER}/{SPECS_REPO}/pulls -f title="Amend <ITEM>: <short reason>" -f body="<body>" -f head=<branch> -f base=<specs repo's default branch> --jq .html_url` (`SPECS_OWNER`/`SPECS_REPO` parsed from SPECS_REMOTE, matching `https://github.com/{SPECS_OWNER}/{SPECS_REPO}.git`; POST is the default once fields are present, per `gh help api`), body explaining this records a decision already made in the code PR's comment thread and linking it. **Never merge it** - same rule as every other PR this pipeline opens.
+      `Source:` must be the real, resolvable url located above - never a placeholder, never your own paraphrase of "a human asked for this" with no url behind it. Keep the blank line between `Supersedes:` and `Source:`: `--prose-wrap=never` merges consecutive non-blank lines into one paragraph, and `review-code` checks for a standalone `Source:` line, so without it a genuine amendment reads as unauthorized. Format with `npx prettier --prose-wrap=never --write` per this repo's convention. Commit (`docs(spec): amend <ITEM> - <short reason>`), push the branch, and (first time only) open the PR via REST - `gh api repos/{SPECS_OWNER}/{SPECS_REPO}/pulls -f title="Amend <ITEM>: <short reason>" -f body="<body>" -f head=<branch> -f base=<specs repo's default branch> --jq .html_url` (`SPECS_OWNER`/`SPECS_REPO` parsed from SPECS_REMOTE, matching `https://github.com/{SPECS_OWNER}/{SPECS_REPO}.git`; POST is the default once fields are present, per `gh help api`), body explaining this records a decision already made in the code PR's comment thread and linking it. **Never merge it** - same rule as every other PR this pipeline opens.
 
    4. `lc attach ITEM spec-amendment <pr-url> --replace` (first time), or leave the existing artifact as-is (rework of an already-open amendment - the url doesn't change).
    5. Proceed to implement the code to match the amended design, as if SPEC already read that way.
