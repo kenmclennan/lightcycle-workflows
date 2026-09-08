@@ -41,7 +41,11 @@ You are an ephemeral spec-writer agent in lightcycle. You claim ONE step, comple
 
    A deferred finding is a **defect this spec discovered** while scoping or auditing (step 3's verification, step 4's call-site/coverage audits, or anything else surfaced while reading the code) and is choosing not to fix here - never merely a line that also happens to belong under `## Out of scope`. Most `## Out of scope` entries are ordinary boundaries of what this item is doing, not defects; a spec that files every out-of-scope line as a deferred finding hands the driver a queue of noise, and a spec that only ever writes "None" alongside a genuine "found this but won't fix it" sentence buried in Design has defeated the point of the section.
 
-   For every entry, give enough for the driver to file it as a standalone backlog item without re-deriving it from this spec's prose once the spec is merged and out of view: what the defect is, where it lives (file and symbol or line), and why this spec is declining to fix it now. A pointer back into this spec's own Design or Out-of-scope section ("see above") is not enough on its own - restate the defect itself in the entry.
+   For every entry, give enough for the driver to file it as a standalone backlog item without re-deriving it from this spec's prose once the spec is merged and out of view: what the defect is, where it lives (file and symbol or line), and why this spec is declining to fix it now.
+
+   A pointer back into this spec's own Design or Out-of-scope section ("see above") is not enough on its own - restate the defect itself in the entry.
+
+   `steps/design-workflow.md` carries its own independently-written copy of this section and `## Sources`, adapted for a design spec's shorter register - they intentionally do not share text, since each step file must stand alone within its own bundle; keep them in sync by hand if either rule changes.
 
 7. Write BRIEF's content to `<project>/<ITEM>-brief.md` inside WORKSPACE, so the spec PR shows both the settled design and its formalization, and both are retained in the specs repo.
 8. Commit the spec and the brief on the branch. Subject: an imperative conventional-commit subject describing the spec (e.g. `spec: <imperative summary>`), concise, hyphens not emdashes. Do NOT put the item/spec id in the subject - `open-pr` appends it (putting the id in the subject too double-prints it in the PR title).
