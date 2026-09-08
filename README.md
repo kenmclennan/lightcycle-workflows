@@ -23,5 +23,6 @@ An item runs one workflow, named on the item (`lc new item "<title>" --workflow 
 | [`spec-driven`](docs/spec-driven.md) | spec PR, code PR | A brief becomes a formal spec on a spec PR; once merged, the same item is built, reviewed, and merged on a code PR. |
 | [`bdd-driven`](docs/bdd-driven.md) | spec PR, feature PR, code PR | A behaviour-first variant: the spec is followed by executable gherkin `.feature` scenarios agreed on their own PR, which the code must then make pass. |
 | [`workflow-authoring`](docs/workflow-authoring.md) | spec PR, code PR | A brief becomes a workflow-design spec (mermaid + step/gate/trigger descriptions) on a spec PR; once merged, the same item authors the bundle and gets it merged on a code PR, gated by the simulator. |
+| [`bump-engine-pin`](docs/bump-engine-pin.md) | code PR (only if stale) | Checks `ENGINE_PIN` against `lightcycle`'s own `main`; at or below threshold the item closes unattended, no PR opened, otherwise it bumps the pin and merges through the generic PR machinery. |
 
 This repo is decoupled from the engine's release cadence: `lc upgrade` updates the engine code; `lc workflow upgrade` updates these workflows. They share only the `contract` version.
