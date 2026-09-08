@@ -76,3 +76,7 @@ signals:
   watch-ci          resets            ci-failed
   await-merge       resets            changes
   resolve-conflict  resolve_attempts  escalate
+
+disposition:
+  merged     completed
+  abandoned  aborted
