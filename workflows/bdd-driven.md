@@ -5,17 +5,23 @@ when-to-use: behaviour worth pinning as an executable acceptance contract before
 
 # BDD-driven
 
-One item, one id, spanning three phases and three review gates. A brief from co-design becomes a
-formal spec on a spec PR; once that merges, a feature-writer derives executable gherkin `.feature`
-scenarios (tagged `@wip`, gherkin only so nothing collects them yet) on a feature PR that a review-features agent primes for
-the human; once that merges, implement-features writes the code and step definitions to make every
-scenario pass - implementing to the spec, never editing a scenario, un-`@wip`-ing each as it goes
-green - opens a code PR, watches CI, is reviewed, and the human merges. There is no workflow flip:
-spec, feature, and code are three positions of one workflow. `open-pr` and `await-merge` each
-appear three times (once per PR); the spec phase takes its worktree from the specs repo, the
-feature and code phases from the project repo (two distinct phases, same repo). The scenarios are
-the frozen executable contract the code must satisfy; the spec is the design intent the code is
-reviewed against.
+One item, one id, spanning three phases and three review gates, plus a fourth phase entered only
+when needed. A brief from co-design becomes a formal spec on a spec PR; once that merges, a
+feature-writer derives executable gherkin `.feature` scenarios (tagged `@wip`, gherkin only so
+nothing collects them yet) on a feature PR that a review-features agent primes for the human; once
+that merges, implement-features writes the code and step definitions to make every scenario pass -
+implementing to the spec, un-`@wip`-ing each scenario as it goes green - opens a code PR, watches
+CI, is reviewed, and the human merges. Implement-features may never edit a scenario itself; if one
+is wrong and a human has authorized the fix on the code PR's own comment thread, it hands off to
+the `amend` phase instead, which rewrites the named scenario(s) on their own PR and, once merged,
+hands back to implement-features on its next rebase. Absent that authorization a wrong scenario
+still blocks for a human, exactly as before. There is no workflow flip: spec, feature, code, and
+amend are positions of one workflow. `open-pr` and `await-merge` each appear three times
+unconditionally (once per PR) plus a fourth time whenever `amend` runs; the spec phase takes its
+worktree from the specs repo, the feature, code, and amend phases from the project repo (three
+distinct phases, same repo). The scenarios are the frozen executable contract the code must
+satisfy - `amend` is the sole, authorization-gated route to changing that contract after it merges;
+the spec is the design intent the code is reviewed against.
 
 entry: spec-writer
 
@@ -48,6 +54,12 @@ phase:
   resolve-conflict         code
   review-ci                code
   code-handle-feedback     code
+  amend-writer             amend
+  amend-open-pr            amend
+  amend-watch-ci           amend
+  amend-await-merge        amend
+  amend-review-ci          amend
+  amend-handle-feedback    amend
 
 display:
   spec-writer              Writing spec
@@ -71,6 +83,12 @@ display:
   review-conflict          Resolve conflict
   review-ci                CI needs a call
   code-handle-feedback     Reading feedback
+  amend-writer             Amending scenario
+  amend-open-pr            Opening scenario-amendment PR
+  amend-watch-ci           Watching CI (scenario amendment)
+  amend-await-merge        Review scenario amendment
+  amend-review-ci          CI needs a call (scenario amendment)
+  amend-handle-feedback    Reading feedback (scenario amendment)
 
 nodes:
   spec-open-pr             open-pr
@@ -84,6 +102,11 @@ nodes:
   code-open-pr             open-pr
   code-await-merge         await-merge
   code-handle-feedback     handle-feedback
+  amend-open-pr            open-pr
+  amend-watch-ci           watch-ci
+  amend-await-merge        await-merge
+  amend-review-ci          review-ci
+  amend-handle-feedback    handle-feedback
 
 edges:
   spec-writer          done             spec-open-pr
@@ -99,6 +122,7 @@ edges:
   feature-await-merge  changes          feature-writer
   feature-await-merge  features-merged  implement-features
   implement-features   done             code-open-pr
+  implement-features   scenario-conflict  amend-writer
   code-open-pr         done             watch-ci             primary
   code-open-pr         conflicted       resolve-conflict
   watch-ci             done             review-code
@@ -111,6 +135,12 @@ edges:
   code-await-merge     gave-up          review-conflict
   resolve-conflict     resolved         code-open-pr         primary
   resolve-conflict     escalate         review-conflict
+  amend-writer         done             amend-open-pr
+  amend-open-pr        done             amend-watch-ci       primary
+  amend-watch-ci       done             amend-await-merge    primary
+  amend-watch-ci       ci-failed        amend-writer
+  amend-await-merge    changes          amend-writer
+  amend-await-merge    scenario-merged  implement-features
 
 hooks:
   pr_merge              spec-await-merge     spec-merged
@@ -131,6 +161,12 @@ hooks:
   mention_token         feature-await-merge  @lc
   mention_token         code-await-merge     @lc
   review_bot_allowlist  code-await-merge     copilot-pull-request-reviewer[bot]
+  pr_merge              amend-await-merge    scenario-merged
+  pr_close              amend-await-merge    abandoned
+  pr_feedback           amend-await-merge    amend-handle-feedback
+  ci_failed_cap         amend-watch-ci       ci-failed  3  amend-review-ci
+  mention_token         amend-await-merge    @lc
+  review_bot_allowlist  amend-await-merge    copilot-pull-request-reviewer[bot]
 
 signals:
   spec-await-merge     resets            changes
@@ -144,6 +180,8 @@ signals:
   watch-ci             resets            ci-failed
   code-await-merge     resets            changes
   resolve-conflict     resolve_attempts  escalate
+  amend-await-merge    resets            changes
+  amend-watch-ci       resets            ci-failed
 
 disposition:
   merged     completed
