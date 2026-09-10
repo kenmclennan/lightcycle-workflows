@@ -16,6 +16,7 @@ draft/review step.
 entry: spec-writer
 
 requires: repo
+provides: spec
 
 workspace:
   spec-writer           specs
