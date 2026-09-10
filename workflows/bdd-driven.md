@@ -26,6 +26,7 @@ the spec is the design intent the code is reviewed against.
 entry: spec-writer
 
 requires: repo
+provides: spec
 
 workspace:
   spec-writer           specs
