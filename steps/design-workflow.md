@@ -51,4 +51,13 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
 9. Commit the spec and the brief on the branch. Subject: an imperative conventional-commit subject describing the design (e.g. `spec: <imperative summary>`), concise, hyphens not emdashes. Do NOT put the item/spec id in the subject - `spec-open-pr` appends it.
 10. `lc attach ITEM spec <project>/<ITEM>-<slug>.md --replace` to attach it. `--replace` matters: `spec` is resolved by type alone (one per item, no phase label), and the first match wins - a plain attach on a rework pass leaves a second row and every consumer keeps reading the first, stale one.
 11. Reflect: `lc attach STEP reflection "<text>"`. Freeform - a design tradeoff you had to settle without a clear precedent, or "clean". Skip only if truly nothing.
+
+    Before writing it, run the same mechanical self-consistency check `spec-writer.md` runs on its own output, adapted to this design's shape, and fold what it finds into the reflection (or "clean" if it finds nothing):
+
+    - Collect every stage, gate, trigger, hook, and `file:line` this design names more than once and check the occurrences agree.
+    - Confirm `## Deferred findings` (step 7) is present, and is not a "None" that a defect recorded elsewhere in this design's own prose contradicts.
+    - Check the design mermaid itself the way `lc workflow check` checks a built graph: every outcome named in the stage/gate/trigger descriptions has a drawn edge, and no drawn edge names an outcome nothing in those descriptions produces.
+
+    `steps/spec-writer.md` carries its own independently-written copy of this check, adapted for a full spec's shape (Design/Acceptance prose, a conditional third check); keep them in sync by hand if either rule changes.
+
 12. `lc done STEP done` (-> spec-open-pr). One-line summary. EXIT.
