@@ -45,7 +45,10 @@ You are an ephemeral build-workflow agent in lightcycle. You claim ONE step, com
      - `pr_conflict <stage> <outcome>` - the PR hit a merge conflict -> `<outcome>`.
      - `pr_conflict_cap <stage> <N>` - resolve conflicts at most N times.
      - `pr_conflict_escalate <stage> <outcome>` - past the cap -> `<outcome>` (usually a human).
+     - `ci_success <stage> <outcome>` - CI succeeded -> `<outcome>`.
+     - `ci_failure <stage> <outcome>` - CI failed -> `<outcome>`.
      - `ci_failed_cap <stage> <outcome> <N> <target>` - CI failed: use `<outcome>` up to N times, then route to `<target>`.
+     - `review_rounds_cap <stage> <outcome> <target>` - review rejected: past the engine's global rounds cap, reroute `<outcome>` to `<target>` instead.
      - `mention_token <stage> <@token>` - the token in a PR comment that pings the human.
      - `review_bot_allowlist <stage> <bot>...` - review bots whose comments the engine acts on.
 
