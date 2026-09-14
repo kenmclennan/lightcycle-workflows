@@ -29,6 +29,7 @@ workspace: project
 phase:
   audit-engine-pin  bump
   open-pr           bump
+  poll-ci           bump
   watch-ci          bump
   review-ci         bump
   await-merge       bump
@@ -39,7 +40,8 @@ phase:
 display:
   audit-engine-pin  Checking pin
   open-pr           Opening PR
-  watch-ci          Watching CI
+  poll-ci           Watching CI
+  watch-ci          Reviewing CI result
   review-ci         CI needs a call
   await-merge       Review PR
   cleanup           Tidying up
@@ -49,9 +51,12 @@ display:
 
 edges:
   audit-engine-pin  stale       open-pr
-  open-pr           done        watch-ci          primary
+  open-pr           done        poll-ci           primary
   open-pr           conflicted  resolve-conflict
+  poll-ci           succeeded   watch-ci
+  poll-ci           failed      watch-ci
   watch-ci          done        await-merge       primary
+  watch-ci          retried     poll-ci
   watch-ci          ci-failed   audit-engine-pin
   await-merge       merged      cleanup
   await-merge       changes     audit-engine-pin
@@ -67,6 +72,8 @@ hooks:
   pr_conflict           await-merge  conflicted
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
+  ci_success            poll-ci      succeeded
+  ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
   mention_token         await-merge  @lc
   review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]

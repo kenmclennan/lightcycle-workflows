@@ -25,6 +25,7 @@ workspace: project
 phase:
   scope-and-code    change
   open-pr           change
+  poll-ci           change
   watch-ci          change
   review-ci         change
   await-merge       change
@@ -35,7 +36,8 @@ phase:
 display:
   scope-and-code    Coding
   open-pr           Opening PR
-  watch-ci          Watching CI
+  poll-ci           Watching CI
+  watch-ci          Reviewing CI result
   review-ci         CI needs a call
   await-merge       Review PR
   cleanup           Tidying up
@@ -47,9 +49,12 @@ display:
 edges:
   scope-and-code    done        open-pr           primary
   scope-and-code    too-big     review-scope
-  open-pr           done        watch-ci          primary
+  open-pr           done        poll-ci           primary
   open-pr           conflicted  resolve-conflict
+  poll-ci           succeeded   watch-ci
+  poll-ci           failed      watch-ci
   watch-ci          done        await-merge       primary
+  watch-ci          retried     poll-ci
   watch-ci          ci-failed   scope-and-code
   await-merge       merged      cleanup
   await-merge       changes     scope-and-code
@@ -65,6 +70,8 @@ hooks:
   pr_conflict           await-merge  conflicted
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
+  ci_success            poll-ci      succeeded
+  ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
   mention_token         await-merge  @lc
   review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]
