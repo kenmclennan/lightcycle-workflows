@@ -78,4 +78,13 @@ You are an ephemeral spec-writer agent in lightcycle. You claim ONE step, comple
 8. Commit the spec and the brief on the branch. Subject: an imperative conventional-commit subject describing the spec (e.g. `spec: <imperative summary>`), concise, hyphens not emdashes. Do NOT put the item/spec id in the subject - `open-pr` appends it (putting the id in the subject too double-prints it in the PR title).
 9. `lc attach ITEM spec <project>/<ITEM>-<slug>.md --replace` to attach it. `--replace` matters: `spec` is resolved by type alone (one per item, no phase label), and the first match wins - a plain attach on a rework pass leaves a second row and every consumer keeps reading the first, stale one (this is what happened on `LC-286.1`: five identical rows, harmless only because the value never changed pass to pass).
 10. Reflect before closing: `lc attach STEP reflection "<text>"`. Freeform - say what helped or got in the way: a BRIEF claim that needed re-verifying against `origin/main` before it held, a sibling spec whose convention wasn't obvious, a Sources or Deferred-findings call that took judgement, a category-3 audit site that was easy to miss, tooling/environment friction. One or two honest sentences beat a checklist; skip only if truly nothing.
+
+    Before writing it, run a mechanical self-consistency check on this spec and report what it finds - or that it found nothing - in the reflection text:
+
+    - Collect every concrete referent this spec names more than once - a `file:line`, a path, a stage/step name, an outcome, an edge - and compare what each occurrence says about it. Flag any referent whose occurrences give incompatible instructions (a file both "changes" and is "not touched"; an edge both required and "deleted").
+    - Confirm `## Deferred findings` (step 6) is actually present, and is not a "None" that a defect recorded elsewhere in this same spec's own text contradicts.
+    - Where this spec's own Design carries a design mermaid, an `edges:` block, or a `hooks:` block describing a workflow graph, check it the way `lc workflow check` checks a built one: every outcome this spec names has a stated destination, and no edge or hook names an outcome this spec never produces. This third check applies only when such a block is present - most specs carry none.
+
+    This is an extraction-and-comparison pass, not a second read for gaps - it looks for the same concrete thing asserted twice, not for missing coverage. `steps/design-workflow.md` and `steps/feature-writer.md` each carry their own independently-written, shape-adapted copy of this check; keep them in sync by hand if this rule changes.
+
 11. `lc done STEP done` (-> open-pr). EXIT.
