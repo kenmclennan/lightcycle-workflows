@@ -25,6 +25,7 @@ phase:
   spec-handle-feedback  spec
   build-workflow        code
   code-open-pr          code
+  poll-ci               code
   watch-ci              code
   review-workflow       code
   code-await-merge      code
@@ -40,7 +41,8 @@ display:
   spec-handle-feedback  Reading feedback
   build-workflow        Building workflow
   code-open-pr          Opening code PR
-  watch-ci              Watching CI
+  poll-ci               Watching CI
+  watch-ci              Reviewing CI result
   review-workflow       Checking workflow
   code-await-merge      Review PR
   cleanup               Tidying up
@@ -63,9 +65,12 @@ edges:
   spec-await-merge  changes      design-workflow
   spec-await-merge  spec-merged  build-workflow
   build-workflow    done         code-open-pr
-  code-open-pr      done         watch-ci          primary
+  code-open-pr      done         poll-ci           primary
   code-open-pr      conflicted   resolve-conflict
+  poll-ci           succeeded    watch-ci
+  poll-ci           failed       watch-ci
   watch-ci          done         review-workflow
+  watch-ci          retried      poll-ci
   watch-ci          ci-failed    build-workflow
   review-workflow   done         code-await-merge  primary
   review-workflow   rejected     build-workflow
@@ -86,6 +91,8 @@ hooks:
   pr_conflict           code-await-merge  conflicted
   pr_conflict_cap       code-await-merge  3
   pr_conflict_escalate  code-await-merge  gave-up
+  ci_success            poll-ci           succeeded
+  ci_failure            poll-ci           failed
   ci_failed_cap         watch-ci          ci-failed  3  review-ci
   mention_token         spec-await-merge  @lc
   mention_token         code-await-merge  @lc

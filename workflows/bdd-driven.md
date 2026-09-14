@@ -41,6 +41,7 @@ phase:
   spec-handle-feedback     spec
   feature-writer           feature
   feature-open-pr          feature
+  feature-poll-ci          feature
   feature-watch-ci         feature
   review-features          feature
   feature-await-merge      feature
@@ -48,6 +49,7 @@ phase:
   feature-handle-feedback  feature
   implement-features       code
   code-open-pr             code
+  poll-ci                  code
   watch-ci                 code
   review-code              code
   code-await-merge         code
@@ -57,6 +59,7 @@ phase:
   code-handle-feedback     code
   amend-writer             amend
   amend-open-pr            amend
+  amend-poll-ci            amend
   amend-watch-ci           amend
   amend-await-merge        amend
   amend-review-ci          amend
@@ -69,14 +72,16 @@ display:
   spec-handle-feedback     Reading feedback
   feature-writer           Writing scenarios
   feature-open-pr          Opening feature PR
-  feature-watch-ci         Watching CI (scenarios)
+  feature-poll-ci          Watching CI (scenarios)
+  feature-watch-ci         Reviewing CI result (scenarios)
   review-features          Checking scenarios
   feature-await-merge      Review scenarios
   feature-review-ci        CI needs a call (scenarios)
   feature-handle-feedback  Reading feedback
   implement-features       Coding
   code-open-pr             Opening code PR
-  watch-ci                 Watching CI
+  poll-ci                  Watching CI
+  watch-ci                 Reviewing CI result
   review-code              Reviewing code
   code-await-merge         Review PR
   cleanup                  Tidying up
@@ -86,7 +91,8 @@ display:
   code-handle-feedback     Reading feedback
   amend-writer             Amending scenario
   amend-open-pr            Opening scenario-amendment PR
-  amend-watch-ci           Watching CI (scenario amendment)
+  amend-poll-ci            Watching CI (scenario amendment)
+  amend-watch-ci           Reviewing CI result (scenario amendment)
   amend-await-merge        Review scenario amendment
   amend-review-ci          CI needs a call (scenario amendment)
   amend-handle-feedback    Reading feedback (scenario amendment)
@@ -96,6 +102,7 @@ nodes:
   spec-await-merge         await-merge
   spec-handle-feedback     handle-feedback
   feature-open-pr          open-pr
+  feature-poll-ci          poll-ci
   feature-watch-ci         watch-ci
   feature-await-merge      await-merge
   feature-review-ci        review-ci
@@ -104,6 +111,7 @@ nodes:
   code-await-merge         await-merge
   code-handle-feedback     handle-feedback
   amend-open-pr            open-pr
+  amend-poll-ci            poll-ci
   amend-watch-ci           watch-ci
   amend-await-merge        await-merge
   amend-review-ci          review-ci
@@ -115,8 +123,11 @@ edges:
   spec-await-merge     changes          spec-writer
   spec-await-merge     spec-merged      feature-writer
   feature-writer       done             feature-open-pr
-  feature-open-pr      done             feature-watch-ci     primary
+  feature-open-pr      done             feature-poll-ci      primary
+  feature-poll-ci      succeeded        feature-watch-ci
+  feature-poll-ci      failed           feature-watch-ci
   feature-watch-ci     done             review-features
+  feature-watch-ci     retried          feature-poll-ci
   feature-watch-ci     ci-failed        feature-writer
   review-features      done             feature-await-merge  primary
   review-features      rejected         feature-writer
@@ -124,9 +135,12 @@ edges:
   feature-await-merge  features-merged  implement-features
   implement-features   done             code-open-pr
   implement-features   scenario-conflict  amend-writer
-  code-open-pr         done             watch-ci             primary
+  code-open-pr         done             poll-ci              primary
   code-open-pr         conflicted       resolve-conflict
+  poll-ci              succeeded        watch-ci
+  poll-ci              failed           watch-ci
   watch-ci             done             review-code
+  watch-ci             retried          poll-ci
   watch-ci             ci-failed        implement-features
   review-code          done             code-await-merge     primary
   review-code          rejected         implement-features
@@ -137,8 +151,11 @@ edges:
   resolve-conflict     resolved         code-open-pr         primary
   resolve-conflict     escalate         review-conflict
   amend-writer         done             amend-open-pr
-  amend-open-pr        done             amend-watch-ci       primary
+  amend-open-pr        done             amend-poll-ci        primary
+  amend-poll-ci        succeeded        amend-watch-ci
+  amend-poll-ci        failed           amend-watch-ci
   amend-watch-ci       done             amend-await-merge    primary
+  amend-watch-ci       retried          amend-poll-ci
   amend-watch-ci       ci-failed        amend-writer
   amend-await-merge    changes          amend-writer
   amend-await-merge    scenario-merged  implement-features
@@ -156,7 +173,11 @@ hooks:
   pr_conflict           code-await-merge     conflicted
   pr_conflict_cap       code-await-merge     3
   pr_conflict_escalate  code-await-merge     gave-up
+  ci_success            poll-ci              succeeded
+  ci_failure            poll-ci              failed
   ci_failed_cap         watch-ci             ci-failed  3  review-ci
+  ci_success            feature-poll-ci      succeeded
+  ci_failure            feature-poll-ci      failed
   ci_failed_cap         feature-watch-ci     ci-failed  3  feature-review-ci
   mention_token         spec-await-merge     @lc
   mention_token         feature-await-merge  @lc
@@ -165,6 +186,8 @@ hooks:
   pr_merge              amend-await-merge    scenario-merged
   pr_close              amend-await-merge    abandoned
   pr_feedback           amend-await-merge    amend-handle-feedback
+  ci_success            amend-poll-ci        succeeded
+  ci_failure            amend-poll-ci        failed
   ci_failed_cap         amend-watch-ci       ci-failed  3  amend-review-ci
   mention_token         amend-await-merge    @lc
   review_bot_allowlist  amend-await-merge    copilot-pull-request-reviewer[bot]
