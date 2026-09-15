@@ -32,6 +32,7 @@ phase:
   cleanup           change
   resolve-conflict  change
   handle-feedback   change
+  review-scope      change
 
 display:
   scope-and-code    Coding
@@ -62,6 +63,7 @@ edges:
   await-merge       gave-up     review-conflict
   resolve-conflict  resolved    open-pr           primary
   resolve-conflict  escalate    review-conflict
+  review-scope      rescoped    scope-and-code
 
 hooks:
   pr_merge              await-merge  merged
