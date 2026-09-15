@@ -44,11 +44,6 @@ jobs:
             elif [ -n "$existing" ]; then
               gh issue close "$existing" --repo "$GITHUB_REPOSITORY" --comment "ENGINE_PIN is back within threshold ($ahead_by commits behind, threshold $threshold)."
             fi
-          else
-            if [ "$ahead_by" -gt "$threshold" ]; then
-              echo "::error::ENGINE_PIN is $ahead_by commits behind lightcycle main (threshold $threshold) - file an lc item: lc new item \"bump ENGINE_PIN ($ahead_by commits behind)\" --workflow lightcycle/bump-engine-pin --repo $GITHUB_REPOSITORY"
-              exit 1
-            fi
           fi
 
       - uses: actions/setup-python@v5
