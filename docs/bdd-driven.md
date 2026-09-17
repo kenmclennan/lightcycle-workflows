@@ -41,6 +41,7 @@ flowchart TD
     end
     RCF -->|escalate| RCON{{"review-conflict"}}
     CAM -->|gave-up| RCON
+    RCON -->|resolved| COP
 ```
 
 ## Steps

@@ -33,6 +33,7 @@ flowchart TD
     end
     RCF -->|escalate| RCON{{"review-conflict"}}
     CAM -->|gave-up| RCON
+    RCON -->|resolved| COP
 ```
 
 ## Steps
@@ -46,5 +47,5 @@ flowchart TD
 | `watch-ci` | agent | Watches CI; routes failures back to `write-code` (capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
-| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap). |
+| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | terminal | The item is merged and done. |

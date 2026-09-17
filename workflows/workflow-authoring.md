@@ -33,6 +33,7 @@ phase:
   resolve-conflict      code
   review-ci             code
   code-handle-feedback  code
+  review-conflict       code
 
 display:
   design-workflow       Designing workflow
@@ -80,6 +81,10 @@ edges:
   code-await-merge  gave-up      review-conflict
   resolve-conflict  resolved     code-open-pr      primary
   resolve-conflict  escalate     review-conflict
+  review-ci             reviewed
+  spec-handle-feedback  done
+  code-handle-feedback  done
+  review-conflict       resolved     code-open-pr      primary
 
 hooks:
   pr_merge              spec-await-merge  spec-merged

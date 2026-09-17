@@ -36,6 +36,7 @@ phase:
   cleanup           bump
   resolve-conflict  bump
   handle-feedback   bump
+  review-conflict   bump
 
 display:
   audit-engine-pin  Checking pin
@@ -64,6 +65,9 @@ edges:
   await-merge       gave-up     review-conflict
   resolve-conflict  resolved    open-pr           primary
   resolve-conflict  escalate    review-conflict
+  review-ci         reviewed
+  handle-feedback   done
+  review-conflict   resolved    open-pr     primary
 
 hooks:
   pr_merge              await-merge  merged
