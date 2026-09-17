@@ -64,6 +64,7 @@ phase:
   amend-await-merge        amend
   amend-review-ci          amend
   amend-handle-feedback    amend
+  review-conflict          code
 
 display:
   spec-writer              Writing spec
@@ -159,6 +160,14 @@ edges:
   amend-watch-ci       ci-failed        amend-writer
   amend-await-merge    changes          amend-writer
   amend-await-merge    scenario-merged  implement-features
+  review-ci                reviewed
+  feature-review-ci        reviewed
+  amend-review-ci          reviewed
+  spec-handle-feedback     done
+  feature-handle-feedback  done
+  code-handle-feedback     done
+  amend-handle-feedback    done
+  review-conflict          resolved     code-open-pr      primary
 
 hooks:
   pr_merge              spec-await-merge     spec-merged

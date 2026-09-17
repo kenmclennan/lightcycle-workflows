@@ -33,6 +33,7 @@ flowchart TD
     end
     RCF -->|escalate| RCON{{"review-conflict"}}
     CAM -->|gave-up| RCON
+    RCON -->|resolved| COP
 ```
 
 ## Steps
@@ -46,5 +47,5 @@ flowchart TD
 | `watch-ci` | agent | Watches the `simulate` CI job; routes failures back to `build-workflow` (capped, then `review-ci`). |
 | `review-workflow` | agent | Reads the `simulate` CI job's own run (already green, per `watch-ci`) to confirm `check`/`simulate` passed and diff its `describe --mermaid` output against the design mermaid; checks the agnostic-rule checklist; primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
-| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap). |
+| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | terminal | The item is merged and done. |

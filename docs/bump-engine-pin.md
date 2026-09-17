@@ -27,6 +27,7 @@ flowchart TD
     end
     RCF -->|escalate| RCON{{"review-conflict"}}
     AM -->|gave-up| RCON
+    RCON -->|resolved| OP
 ```
 
 ## Steps
@@ -37,5 +38,5 @@ flowchart TD
 | `open-pr` | agent | Rebases on main, pushes, opens the PR. |
 | `watch-ci` | agent | Watches the `simulate` CI job - the bump PR validates itself against the new pin end to end; routes failures back to `audit-engine-pin` (capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
-| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap). |
+| `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | terminal | The item is merged and done. |
