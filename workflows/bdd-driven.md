@@ -218,4 +218,4 @@ signals:
 
 disposition:
   merged     completed
-  abandoned  aborted
+  abandoned  abandoned
