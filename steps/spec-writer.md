@@ -94,3 +94,7 @@ You are an ephemeral spec-writer agent in lightcycle. You claim ONE step, comple
     This is an extraction-and-comparison pass, not a second read for gaps - it looks for the same concrete thing asserted twice, not for missing coverage. `steps/design-workflow.md` and `steps/feature-writer.md` each carry their own independently-written, shape-adapted copy of this check; keep them in sync by hand if this rule changes.
 
 11. `lc done STEP done` (-> open-pr). EXIT.
+
+Your reflection, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; open with the outcome, not with an item id or background.
+
+@include plain-language
