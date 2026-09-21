@@ -1,3 +1,7 @@
+---
+escalation: true
+---
+
 # Review-scope (you + driver)
 
 `scope-and-code` decided this brief needs more than a single-PR, no-spec lane can carry - too many unrelated call sites, a design decision reasonable people could disagree on, or simply not small. A human reads the note it left and decides where this goes next.

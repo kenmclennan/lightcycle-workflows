@@ -1,3 +1,7 @@
+---
+escalation: true
+---
+
 # Review-ci (you + driver)
 
 CI has failed on this item enough times that write-code kept reworking it without landing a green run. The coder is not converging on its own; a human needs to look at the accumulated failure notes and decide what happens next.

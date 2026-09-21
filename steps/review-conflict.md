@@ -1,3 +1,7 @@
+---
+escalation: true
+---
+
 # Review-conflict (you + driver)
 
 `resolve-conflict` tried to reconcile this item's branch with `origin/main` and escalated - either a semantic conflict it should not guess at, or a rebase whose tests kept failing after repeated attempts. A human finishes what the agent could not.
