@@ -15,3 +15,7 @@ escalation: true
    - **Resolved** - force-push the rebased branch (`git push --force-with-lease`), then `lc done STEP resolved` - re-enters the PR/CI cycle the same way `resolve-conflict`'s own `resolved` outcome does.
    - **Abandon** - the conflict is not worth resolving, or the underlying change should not land - `lc done ITEM abandoned`, the item-level close, which also closes this step; do not additionally run the `resolved` outcome above.
    - **Leave it blocked** for a later look - `lc set STEP --state waiting --needs "<what a human must decide>" --reason "<what happened that led here>"`, then EXIT.
+
+The `--note` on `lc done` and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
+
+@include plain-language

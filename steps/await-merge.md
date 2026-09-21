@@ -10,3 +10,7 @@ A PR is green, comments resolved, and rebased on the tip of main - ready to merg
 5. If it needs changes instead of merging, ask for them **on the PR**, not in the store: post a top-level comment mentioning the gate's feedback token (`@lc` in the built-in bundles - the `mention_token` hook on this node names it) saying exactly what to change and why. The pool's PR monitor spawns `handle-feedback`, which decides rework vs answer, replies on the thread carrying `<!-- lc -->` to record that decision, and routes this step for you. Do NOT run `lc done STEP changes` yourself while there is a PR to comment on - it skips the recorded reply, leaves the reviewer's reasoning where no reviewer will look, and never advances the comment ledger. Fall back to `lc done STEP changes --note "..."` only when there is no PR thread to post to.
 
 The merge is the human's irreducible act, except where an autopilot Scope Statement has explicitly delegated it for this run; you assist and do the bookkeeping regardless.
+
+The `--note` you leave when routing changes back, and any `--needs` or `--reason` text you park with, are read by a human or the next agent. They follow the standard below.
+
+@include plain-language

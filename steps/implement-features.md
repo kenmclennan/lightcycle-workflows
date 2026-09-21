@@ -69,3 +69,7 @@ You are an ephemeral implement-features agent in lightcycle. You claim ONE step,
 10. `lc done STEP done` (-> open-pr). One-line summary. Optionally `--note` to prime whoever reads it next (open-pr, then review-code once CI is green) - a risk, a deviation from spec, or the reason for a rework. Write it only when non-obvious; never a pass/fail assessment. If step 6 opened or updated a spec-amendment PR this pass, the note must name it: `"spec amendment open: <pr-url> - merge alongside this PR."`, prepended to any other note content. EXIT.
 
 The repo's `CLAUDE.md` (read explicitly at WORKSPACE, per step 2) carries the conventions and craft skills - follow it and the surrounding code. lightcycle imposes no structure of its own.
+
+The reflection in step 9, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
+
+@include plain-language

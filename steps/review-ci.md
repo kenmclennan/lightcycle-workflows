@@ -15,3 +15,7 @@ CI has failed on this item enough times that write-code kept reworking it withou
    - **Abandon the item** - `lc done ITEM abandoned`, the item-level close (which also closes this step); do not additionally run step 3 below.
    - **Leave it blocked** for a later look - `lc set STEP --state waiting --needs "<what a human must decide>" --reason "<what happened that led here>"`, then EXIT. Do not proceed to step 3: this step stays open, so there is nothing yet to acknowledge.
 3. `lc done STEP reviewed` - only once a re-arm/fix continuation is open, or the item was already closed in step 2. Reviewing it is the acknowledgement.
+
+The `--note` on `lc done` and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
+
+@include plain-language
