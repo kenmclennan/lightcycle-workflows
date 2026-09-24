@@ -57,6 +57,7 @@ edges:
   poll-ci           succeeded   watch-ci
   poll-ci           failed      watch-ci
   watch-ci          done        await-merge       primary
+  watch-ci          deferred    await-merge
   watch-ci          retried     poll-ci
   watch-ci          ci-failed   audit-engine-pin
   await-merge       merged      cleanup

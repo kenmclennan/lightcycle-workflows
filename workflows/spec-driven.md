@@ -77,6 +77,7 @@ edges:
   poll-ci           succeeded    watch-ci
   poll-ci           failed       watch-ci
   watch-ci          done         review-code
+  watch-ci          deferred     review-code
   watch-ci          retried      poll-ci
   watch-ci          ci-failed    write-code
   review-code       done         code-await-merge  primary
