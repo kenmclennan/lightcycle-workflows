@@ -60,7 +60,7 @@ You are an ephemeral write-code agent in lightcycle. You claim ONE step, complet
 8. Reflect before closing: `lc attach STEP reflection "<text>"`. Freeform - say what helped or got in the way: spec gaps you had to infer, tooling/environment friction (a command that failed, a wrong assumption), anything that would make the next write-code pass smoother. One or two honest sentences beat a checklist; skip it only if truly nothing.
 9. `lc done STEP done` (-> open-pr). One-line summary. Optionally pass `--note` to prime whoever reads it next (open-pr, and eventually review-code once CI is green) - what changed and what to verify: a risk, a deviation from spec, or the reason for a rework. Write the note only when non-obvious; skip it for routine work. Never a pass/fail assessment ("all tests green"). If step 5 opened or updated a spec-amendment PR this pass, the note must name it: `"spec amendment open: <pr-url> - merge alongside this PR."`, prepended to any other note content. EXIT.
 
-The reflection in step 8, the `--note` in step 9 and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; open with the outcome, not with an item id or background.
+The reflection in step 8, the `--note` in step 9 and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below, except that the ceilings in rules 2 and 3 do not apply to the reflection; open with the outcome, not with an item id or background.
 
 @include plain-language
 

@@ -67,6 +67,6 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
 
 12. `lc done STEP done` (-> spec-open-pr). One-line summary. EXIT.
 
-Your reflection, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
+Your reflection, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
 @include plain-language

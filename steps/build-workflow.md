@@ -106,6 +106,6 @@ You are an ephemeral build-workflow agent in lightcycle. You claim ONE step, com
 12. Reflect: `lc attach STEP reflection "<text>"`. Freeform - a grammar gap this file didn't cover, a tooling/environment friction (a blocked command, a wrong assumption), anything that would make the next build-workflow pass smoother. Skip only if truly nothing.
 13. `lc done STEP done` (-> code-open-pr). One-line summary. Optionally `--note` to prime `review-workflow` - a risk, a deviation from SPEC, or the reason for a rework. Never a pass/fail assessment. If step 9 opened or updated a spec-amendment PR this pass, the note must name it: `"spec amendment open: <pr-url> - merge alongside this PR."`, prepended to any other note content. EXIT.
 
-The reflection in step 12, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
+The reflection in step 12, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
 @include plain-language
