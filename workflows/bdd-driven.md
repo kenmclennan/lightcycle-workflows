@@ -128,6 +128,7 @@ edges:
   feature-poll-ci      succeeded        feature-watch-ci
   feature-poll-ci      failed           feature-watch-ci
   feature-watch-ci     done             review-features
+  feature-watch-ci     deferred         review-features
   feature-watch-ci     retried          feature-poll-ci
   feature-watch-ci     ci-failed        feature-writer
   review-features      done             feature-await-merge  primary
@@ -141,6 +142,7 @@ edges:
   poll-ci              succeeded        watch-ci
   poll-ci              failed           watch-ci
   watch-ci             done             review-code
+  watch-ci             deferred         review-code
   watch-ci             retried          poll-ci
   watch-ci             ci-failed        implement-features
   review-code          done             code-await-merge     primary
@@ -156,6 +158,7 @@ edges:
   amend-poll-ci        succeeded        amend-watch-ci
   amend-poll-ci        failed           amend-watch-ci
   amend-watch-ci       done             amend-await-merge    primary
+  amend-watch-ci       deferred         amend-await-merge
   amend-watch-ci       retried          amend-poll-ci
   amend-watch-ci       ci-failed        amend-writer
   amend-await-merge    changes          amend-writer
