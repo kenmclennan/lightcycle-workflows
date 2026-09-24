@@ -26,7 +26,14 @@ jobs:
         run: |
           set -euo pipefail
           threshold=20
-          ahead_by="$(gh api "repos/kenmclennan/lightcycle/compare/${ENGINE_PIN}...main" --jq .ahead_by)"
+          if ! ahead_by="$(gh api "repos/kenmclennan/lightcycle/compare/${ENGINE_PIN}...main" --jq .ahead_by)"; then
+            if [ "${{ github.event_name }}" = "schedule" ]; then
+              echo "::error::could not read ENGINE_PIN staleness from the GitHub compare API; the scheduled run decides the engine-pin-stale issue from it, so it must not guess"
+              exit 1
+            fi
+            echo "::warning::could not read ENGINE_PIN staleness from the GitHub compare API; continuing, since it is informational outside the scheduled run"
+            ahead_by=unknown
+          fi
           echo "ENGINE_PIN is $ahead_by commit(s) behind kenmclennan/lightcycle main (threshold $threshold)"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
