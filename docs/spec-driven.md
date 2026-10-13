@@ -23,6 +23,9 @@ flowchart TD
     subgraph C ["code phase (project repo)"]
         WC --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| WC
+        WCI -->|review-rework| WC
+        WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
+        WCI -.->|"review_rounds_cap: review-rework"| RCI
         RC -->|rejected| WC
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| WC
@@ -44,7 +47,7 @@ flowchart TD
 | `spec-open-pr` / `spec-await-merge` | agent / human | Opens the spec PR; the human reviews and merges it (the review gate). |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
 | `code-open-pr` | agent | Rebases on main, pushes, opens the code PR. |
-| `watch-ci` | agent | Watches CI; routes failures back to `write-code` (capped, then `review-ci`). |
+| `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |

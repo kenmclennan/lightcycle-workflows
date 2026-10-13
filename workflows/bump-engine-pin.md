@@ -51,24 +51,25 @@ display:
   handle-feedback   Reading feedback
 
 edges:
-  audit-engine-pin  stale       open-pr
-  open-pr           done        poll-ci           primary
-  open-pr           conflicted  resolve-conflict
-  poll-ci           succeeded   watch-ci
-  poll-ci           failed      watch-ci
-  watch-ci          done        await-merge       primary
-  watch-ci          deferred    await-merge
-  watch-ci          retried     poll-ci
-  watch-ci          ci-failed   audit-engine-pin
-  await-merge       merged      cleanup
-  await-merge       changes     audit-engine-pin
-  await-merge       conflicted  resolve-conflict
-  await-merge       gave-up     review-conflict
-  resolve-conflict  resolved    open-pr           primary
-  resolve-conflict  escalate    review-conflict
+  audit-engine-pin  stale          open-pr
+  open-pr           done           poll-ci           primary
+  open-pr           conflicted     resolve-conflict
+  poll-ci           succeeded      watch-ci
+  poll-ci           failed         watch-ci
+  watch-ci          done           await-merge       primary
+  watch-ci          deferred       await-merge
+  watch-ci          retried        poll-ci
+  watch-ci          ci-failed      audit-engine-pin
+  watch-ci          review-rework  audit-engine-pin
+  await-merge       merged         cleanup
+  await-merge       changes        audit-engine-pin
+  await-merge       conflicted     resolve-conflict
+  await-merge       gave-up        review-conflict
+  resolve-conflict  resolved       open-pr           primary
+  resolve-conflict  escalate       review-conflict
   review-ci         reviewed
   handle-feedback   done
-  review-conflict   resolved    open-pr     primary
+  review-conflict   resolved       open-pr           primary
 
 hooks:
   pr_merge              await-merge  merged
@@ -80,12 +81,15 @@ hooks:
   ci_success            poll-ci      succeeded
   ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
+  review_rounds_cap     watch-ci     review-rework  review-ci
   mention_token         await-merge  @lc
   review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]
 
 signals:
   open-pr           conflicts         ~conflict
+  watch-ci          review_rounds     review-rework
   watch-ci          resets            ci-failed
+  watch-ci          resets            review-rework
   await-merge       resets            changes
   resolve-conflict  resolve_attempts  escalate
 

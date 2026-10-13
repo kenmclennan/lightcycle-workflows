@@ -19,6 +19,9 @@ flowchart TD
     subgraph P ["bump phase (this repo)"]
         AEP --> OP["open-pr"] --> WCI["watch-ci"] --> AM{{"await-merge"}}
         WCI -->|ci-failed| AEP
+        WCI -->|review-rework| AEP
+        WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
+        WCI -.->|"review_rounds_cap: review-rework"| RCI
         AM -->|changes| AEP
         OP -->|conflicted| RCF["resolve-conflict"]
         AM -->|conflicted| RCF
@@ -36,7 +39,7 @@ flowchart TD
 | --- | --- | --- |
 | `audit-engine-pin` | agent | Reads `ENGINE_PIN` and the staleness threshold off `origin/main`'s `simulate.yml`, computes how many commits behind `kenmclennan/lightcycle` main it is. At or below threshold, closes the item itself (`clean`) - no PR. Above threshold, bumps `ENGINE_PIN` to the engine's current `main` sha and commits. |
 | `open-pr` | agent | Rebases on main, pushes, opens the PR. |
-| `watch-ci` | agent | Watches the `simulate` CI job - the bump PR validates itself against the new pin end to end; routes failures back to `audit-engine-pin` (capped, then `review-ci`). |
+| `watch-ci` | agent | Watches the `simulate` CI job - the bump PR validates itself against the new pin end to end; routes failing CI and correct review comments back to `audit-engine-pin` (each capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | terminal | The item is merged and done. |

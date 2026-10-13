@@ -19,6 +19,9 @@ flowchart TD
     subgraph P ["change phase (this repo)"]
         SAC --> OP["open-pr"] --> WCI["watch-ci"] --> AM{{"await-merge"}}
         WCI -->|ci-failed| SAC
+        WCI -->|review-rework| SAC
+        WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
+        WCI -.->|"review_rounds_cap: review-rework"| RCI
         AM -->|changes| SAC
         OP -->|conflicted| RCF["resolve-conflict"]
         AM -->|conflicted| RCF
@@ -36,7 +39,7 @@ flowchart TD
 | --- | --- | --- |
 | `scope-and-code` | agent | Reads the brief off the item's own description, decides whether it fits one PR with no design review, and writes the code. `too-big` routes to a human rather than building oversized work; on a rework it captures and reconciles a per-file test/step-def inventory so a rework round can't silently drop a test. |
 | `open-pr` | agent | Rebases on main, pushes, opens the PR. |
-| `watch-ci` | agent | Watches CI; routes failures back to `scope-and-code` (capped, then `review-ci`). |
+| `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `scope-and-code` (each capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `review-scope` | human | The brief turned out bigger than this lane should carry - decide whether to refile it under `spec-driven`. |

@@ -23,6 +23,9 @@ flowchart TD
     subgraph C ["code phase (target workflow-origin repo)"]
         BW --> COP["code-open-pr"] --> WCI["watch-ci"] --> RW["review-workflow"]
         WCI -->|ci-failed| BW
+        WCI -->|review-rework| BW
+        WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
+        WCI -.->|"review_rounds_cap: review-rework"| RCI
         RW -->|rejected| BW
         RW -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| BW
@@ -44,7 +47,7 @@ flowchart TD
 | `spec-open-pr` / `spec-await-merge` | agent / human | Opens the spec PR; the human reviews the design and merges it (the review gate). |
 | `build-workflow` | agent | Authors the bundle to match the approved design, carrying the full grammar, hook catalog, and self-contained-bundle rule inline. |
 | `code-open-pr` | agent | Rebases on main, pushes, opens the code PR. |
-| `watch-ci` | agent | Watches the `simulate` CI job; routes failures back to `build-workflow` (capped, then `review-ci`). |
+| `watch-ci` | agent | Watches the `simulate` CI job; routes failing CI and correct review comments back to `build-workflow` (each capped, then `review-ci`). |
 | `review-workflow` | agent | Reads the `simulate` CI job's own run (already green, per `watch-ci`) to confirm `check`/`simulate` passed and diff its `describe --mermaid` output against the design mermaid; checks the agnostic-rule checklist; primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
