@@ -67,31 +67,32 @@ nodes:
   code-handle-feedback  handle-feedback
 
 edges:
-  spec-writer       done         spec-open-pr
-  spec-open-pr      done         spec-await-merge
-  spec-await-merge  changes      spec-writer
-  spec-await-merge  spec-merged  write-code
-  write-code        done         code-open-pr
-  code-open-pr      done         poll-ci           primary
-  code-open-pr      conflicted   resolve-conflict
-  poll-ci           succeeded    watch-ci
-  poll-ci           failed       watch-ci
-  watch-ci          done         review-code
-  watch-ci          deferred     review-code
-  watch-ci          retried      poll-ci
-  watch-ci          ci-failed    write-code
-  review-code       done         code-await-merge  primary
-  review-code       rejected     write-code
-  code-await-merge  merged       cleanup
-  code-await-merge  changes      write-code
-  code-await-merge  conflicted   resolve-conflict
-  code-await-merge  gave-up      review-conflict
-  resolve-conflict  resolved     code-open-pr      primary
-  resolve-conflict  escalate     review-conflict
+  spec-writer           done           spec-open-pr
+  spec-open-pr          done           spec-await-merge
+  spec-await-merge      changes        spec-writer
+  spec-await-merge      spec-merged    write-code
+  write-code            done           code-open-pr
+  code-open-pr          done           poll-ci           primary
+  code-open-pr          conflicted     resolve-conflict
+  poll-ci               succeeded      watch-ci
+  poll-ci               failed         watch-ci
+  watch-ci              done           review-code
+  watch-ci              deferred       review-code
+  watch-ci              retried        poll-ci
+  watch-ci              ci-failed      write-code
+  watch-ci              review-rework  write-code
+  review-code           done           code-await-merge  primary
+  review-code           rejected       write-code
+  code-await-merge      merged         cleanup
+  code-await-merge      changes        write-code
+  code-await-merge      conflicted     resolve-conflict
+  code-await-merge      gave-up        review-conflict
+  resolve-conflict      resolved       code-open-pr      primary
+  resolve-conflict      escalate       review-conflict
   review-ci             reviewed
   spec-handle-feedback  done
   code-handle-feedback  done
-  review-conflict       resolved     code-open-pr      primary
+  review-conflict       resolved       code-open-pr      primary
 
 hooks:
   pr_merge              spec-await-merge  spec-merged
@@ -106,6 +107,7 @@ hooks:
   ci_success            poll-ci           succeeded
   ci_failure            poll-ci           failed
   ci_failed_cap         watch-ci          ci-failed  3  review-ci
+  review_rounds_cap     watch-ci          review-rework  review-ci
   mention_token         spec-await-merge  @lc
   mention_token         code-await-merge  @lc
   review_bot_allowlist  code-await-merge  copilot-pull-request-reviewer[bot]
@@ -115,7 +117,9 @@ signals:
   review-code       review_rounds     rejected
   review-code       resets            rejected
   code-open-pr      conflicts         ~conflict
+  watch-ci          review_rounds     review-rework
   watch-ci          resets            ci-failed
+  watch-ci          resets            review-rework
   code-await-merge  resets            changes
   resolve-conflict  resolve_attempts  escalate
 

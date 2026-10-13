@@ -49,26 +49,27 @@ display:
   review-scope      Rescope change
 
 edges:
-  scope-and-code    done        open-pr           primary
-  scope-and-code    too-big     review-scope
-  open-pr           done        poll-ci           primary
-  open-pr           conflicted  resolve-conflict
-  poll-ci           succeeded   watch-ci
-  poll-ci           failed      watch-ci
-  watch-ci          done        await-merge       primary
-  watch-ci          deferred    await-merge
-  watch-ci          retried     poll-ci
-  watch-ci          ci-failed   scope-and-code
-  await-merge       merged      cleanup
-  await-merge       changes     scope-and-code
-  await-merge       conflicted  resolve-conflict
-  await-merge       gave-up     review-conflict
-  resolve-conflict  resolved    open-pr           primary
-  resolve-conflict  escalate    review-conflict
-  review-scope      rescoped    scope-and-code
+  scope-and-code    done           open-pr           primary
+  scope-and-code    too-big        review-scope
+  open-pr           done           poll-ci           primary
+  open-pr           conflicted     resolve-conflict
+  poll-ci           succeeded      watch-ci
+  poll-ci           failed         watch-ci
+  watch-ci          done           await-merge       primary
+  watch-ci          deferred       await-merge
+  watch-ci          retried        poll-ci
+  watch-ci          ci-failed      scope-and-code
+  watch-ci          review-rework  scope-and-code
+  await-merge       merged         cleanup
+  await-merge       changes        scope-and-code
+  await-merge       conflicted     resolve-conflict
+  await-merge       gave-up        review-conflict
+  resolve-conflict  resolved       open-pr           primary
+  resolve-conflict  escalate       review-conflict
+  review-scope      rescoped       scope-and-code
   review-ci         reviewed
   handle-feedback   done
-  review-conflict   resolved    open-pr           primary
+  review-conflict   resolved       open-pr           primary
 
 hooks:
   pr_merge              await-merge  merged
@@ -80,12 +81,15 @@ hooks:
   ci_success            poll-ci      succeeded
   ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
+  review_rounds_cap     watch-ci     review-rework  review-ci
   mention_token         await-merge  @lc
   review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]
 
 signals:
   open-pr           conflicts         ~conflict
+  watch-ci          review_rounds     review-rework
   watch-ci          resets            ci-failed
+  watch-ci          resets            review-rework
   await-merge       resets            changes
   resolve-conflict  resolve_attempts  escalate
 
