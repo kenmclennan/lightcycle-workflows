@@ -49,7 +49,7 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
    | What this spec states | Where it is already defined | Link or restate |
    | --------------------- | --------------------------- | --------------- |
 
-   The middle column is a locator you can open, not "the grammar" or "the engine". Default to `link`; write `restate` only with a stated reason. This table is for facts the design borrows, not its own new decisions - a new stage's purpose or a new edge's meaning needs no row.
+   The middle column is a locator you can open, not "the grammar" or "the engine". Default to `link`; write `restate` only with a stated reason. This table is for facts the design borrows, not its own new decisions - a new stage's purpose or a new edge's meaning needs no row. Provenance is not a fact: who supplied a file, who decided what and when, and which conversation something came from get no row and stay out of the spec even when BRIEF carries them, so cite a source by what it is, never by the person who sent it.
 
 7. Write the spec's `## Deferred findings` section, right after `## Sources`. Always present - write "None" explicitly when step 3's verification turned up nothing this design is declining to fix. A deferred finding is a defect found while reading BRIEF, CODE_PATH, or sibling specs and left unfixed here - never a line that also belongs under `## Out of scope`. Name the defect, where it lives, and why it is not fixed now, so the driver can file it standalone without re-deriving it from this spec's prose.
 8. Write BRIEF's content to `<project>/<ITEM>-brief.md` inside WORKSPACE, so the spec PR shows both the settled design and its formalization.
