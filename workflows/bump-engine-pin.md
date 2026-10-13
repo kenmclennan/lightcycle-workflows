@@ -5,19 +5,20 @@ when-to-use: the nightly engine-pin-stale issue or a failing gate names this rep
 
 # Bump-engine-pin
 
-One item, one id, one phase, one PR. `audit-engine-pin` reads the currently-deployed `ENGINE_PIN`
-out of `.github/workflows/simulate.yml` and compares it to `kenmclennan/lightcycle`'s own `main` via
-the GitHub compare API. At or below the configured threshold there is nothing to do - it closes
-the item itself (`clean`) with no PR opened. Above threshold it bumps `ENGINE_PIN` to the engine's
-current `main` sha, commits, and hands off to the same generic PR/CI machinery every other bundle
-here already has: open a PR, watch its own gate run (the very `simulate.yml` this item edits),
-human reviews and merges, cleanup closes the item. `audit-engine-pin` is the only stage that carries
+One item, one id, one phase, one PR. `audit-engine-pin` reads the repo's currently-deployed engine
+pin and staleness threshold off `origin/main` - the repo's `CLAUDE.md` `## Engine pin` section says
+where they live - and compares the pin to the engine repo's own `main` via the GitHub compare API.
+At or below the configured threshold there is nothing to do - it closes the item itself (`clean`)
+with no PR opened. Above threshold it bumps the pin to the engine's current `main` sha, commits, and
+hands off to the same generic PR/CI machinery every other bundle here already has: open a PR, watch
+its own gate run (the very CI workflow this item edits), human reviews and merges, cleanup closes
+the item. `audit-engine-pin` is the only stage that carries
 this pipeline's own subject matter; everything after it is unmodified reuse.
 
-Filing this workflow is a human act, not something CI can do itself - a GitHub Actions runner has no
-path to the local `lc` store. The nightly `simulate.yml` schedule run and the gate's own hard failure
-past threshold are what prompt a human to run
-`lc new item "bump ENGINE_PIN (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`;
+Filing this workflow is a human act, not something CI can do itself - a CI runner has no path to
+the local `lc` store. The repo's scheduled CI run and the gate's own hard failure past threshold are
+what prompt a human to run
+`lc new item "bump the engine pin (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`;
 everything downstream of that is mechanical.
 
 entry: audit-engine-pin

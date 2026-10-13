@@ -24,6 +24,15 @@ _Cross-repo process (PR-flow, coupled changes) is a driver operation - see the `
 
 The CI gate for a workflow change is `.github/workflows/simulate.yml`. For each workflow in the bundle it prints three log sections: `== lc workflow check ci-bundle/<name> ==`, `== lc workflow simulate ci-bundle/<name> ==` and `== lc workflow describe ci-bundle/<name> --mermaid ==`. Read a design's rendered mermaid from the describe section of the latest `push` run at the head sha, never a `schedule` run: a push run installs the engine at `ENGINE_PIN`, a schedule run installs the engine's `main` and can render slightly differently.
 
+## Engine pin
+
+`audit-engine-pin` (the `bump-engine-pin` workflow) reads these facts from here, since they are true of this repo only.
+
+- The pin is `ENGINE_PIN` on the `env:` line of `.github/workflows/simulate.yml`: the key, a colon, a space, then the bare 40-character sha with no quotes.
+- The staleness threshold is the `threshold=<N>` line inside the "Check ENGINE_PIN staleness against lightcycle main" step of that same file. The gate compares with `-gt`, so both it and `audit-engine-pin` trip at `N+1` commits behind, never at `N`.
+- ENGINE_REPO, the engine repo the pin points into, is `kenmclennan/lightcycle`.
+- A bump changes that one line and no other file. Its commit subject is `chore: bump ENGINE_PIN to <short-sha> (<ahead-by> commits behind main)`, where `<short-sha>` is the first 7 characters of the new pin.
+
 ## Documenting a workflow
 
 A new workflow gets a page at `docs/<name>.md` and a row in the workflow table in `README.md`, matching the existing pages. A doc page draws its flowchart by hand for a human skim, with `[ agent ]` for an agent step, `{{ human }}` for a human gate and `([ terminal ])` for a terminal. That convention is distinct from a design spec's mermaid, which mirrors `lc workflow describe --mermaid`'s own rendering; do not mix the two in one file.
