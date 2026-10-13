@@ -75,7 +75,9 @@ jobs:
         run: |
           set -euo pipefail
           export LC_HOME="$(mktemp -d)"
-          lc init >/dev/null 2>&1 || true
+          git config --global user.name "lightcycle-ci"
+          git config --global user.email "lightcycle-ci@users.noreply.github.com"
+          lc init >/dev/null
           lc workflow add "$GITHUB_WORKSPACE" --name ci-bundle --ref HEAD
           fail=0
           for f in workflows/*.md; do
