@@ -6,7 +6,7 @@ escalation: true
 
 CI has failed on this item enough times that the workflow's coder stage kept reworking it without landing a green run. The coder is not converging on its own; a human needs to look at the accumulated failure notes and decide what happens next.
 
-`review-ci` declares exactly one outgoing outcome, `reviewed` - a terminal declaration with no edge target, so the engine now refuses any other string here but still does not treat closing it as a routing decision. Get the ordering right before step 3: closing this step while it is the item's only open one ends the item outright, not just this gate - the terminal declaration stops a typo, not a premature close.
+`review-ci` declares exactly one outgoing outcome, `reviewed` - a terminal declaration with no edge target, so the engine refuses any other string here but does not treat closing it as a routing decision. Get the ordering right before step 3: closing this step while it is the item's only open one ends the item outright, not just this gate - the terminal declaration stops a typo, not a premature close.
 
 1. `lc show STEP` - the forwarded note carries the latest failing job/test; `lc trace ITEM` shows every prior `ci-failed` note in sequence, so you can see whether it is the same failure repeating or a new one each time.
 2. Decide, and put the continuation in place before closing this step:

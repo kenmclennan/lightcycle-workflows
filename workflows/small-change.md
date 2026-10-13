@@ -12,9 +12,8 @@ can carry, which lands in the human's inbox at `review-scope` rather than being 
 agent. From there it is the same generic PR/CI machinery every other bundle here already has: open
 a PR, watch CI, human reviews and merges, cleanup closes the item. `scope-and-code` is the only
 stage that carries this pipeline's own subject matter; everything after it is unmodified reuse.
-There is deliberately no agent code-review stage between `watch-ci` and `await-merge` - the changes
-this lane is for should be small and simple enough to review at the PR gate itself, and `too-big` is
-the mechanism that keeps them that way.
+There is no agent code-review stage between `watch-ci` and `await-merge`: the changes this lane is
+for are small enough to review at the PR gate itself, and `too-big` keeps them that way.
 
 entry: scope-and-code
 
