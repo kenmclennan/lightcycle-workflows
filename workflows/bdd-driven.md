@@ -15,7 +15,7 @@ CI, is reviewed, and the human merges. Implement-features may never edit a scena
 is wrong and a human has authorized the fix on the code PR's own comment thread, it hands off to
 the `amend` phase instead, which rewrites the named scenario(s) on their own PR and, once merged,
 hands back to implement-features on its next rebase. Absent that authorization a wrong scenario
-still blocks for a human, exactly as before. There is no workflow flip: spec, feature, code, and
+still blocks for a human. There is no workflow flip: spec, feature, code, and
 amend are positions of one workflow. `open-pr` and `await-merge` each appear three times
 unconditionally (once per PR) plus a fourth time whenever `amend` runs; the spec phase takes its
 worktree from the specs repo, the feature, code, and amend phases from the project repo (three
