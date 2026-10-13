@@ -19,3 +19,11 @@ _Cross-repo process (PR-flow, coupled changes) is a driver operation - see the `
 - **A step prompt's prose names only bundles that live in this repo.** Every machine that runs `lc init` pulls this origin, so a bundle named in a step prompt here is one every operator learns about - including one from a personal origin they have no access to and no reason to know exists. Where an example needs a shape no bundle here has, describe the shape ("a looping flow whose final stage returns to its planner") rather than borrowing a name from elsewhere. The names available are `spec-driven`, `bdd-driven`, `small-change`, `workflow-authoring` and `bump-engine-pin`.
 - The periodic retro audit is an **engine service**, not a workflow step - do not wire it here.
 - Hyphens not emdashes. Format markdown with `prettier --prose-wrap=never` - except `workflows/*.md`: its `entry`/`requires`/`workspace`/`phase`/`nodes`/`edges`/`hooks`/`signals` block is significant-whitespace-aligned, not prose, and prettier collapses it onto unreadable single lines. Never run prettier on a `workflows/*.md` file; hand-edit it and match the existing column alignment.
+
+## The simulate CI job
+
+The CI gate for a workflow change is `.github/workflows/simulate.yml`. For each workflow in the bundle it prints three log sections: `== lc workflow check ci-bundle/<name> ==`, `== lc workflow simulate ci-bundle/<name> ==` and `== lc workflow describe ci-bundle/<name> --mermaid ==`. Read a design's rendered mermaid from the describe section of the latest `push` run at the head sha, never a `schedule` run: a push run installs the engine at `ENGINE_PIN`, a schedule run installs the engine's `main` and can render slightly differently.
+
+## Documenting a workflow
+
+A new workflow gets a page at `docs/<name>.md` and a row in the workflow table in `README.md`, matching the existing pages. A doc page draws its flowchart by hand for a human skim, with `[ agent ]` for an agent step, `{{ human }}` for a human gate and `([ terminal ])` for a terminal. That convention is distinct from a design spec's mermaid, which mirrors `lc workflow describe --mermaid`'s own rendering; do not mix the two in one file.
