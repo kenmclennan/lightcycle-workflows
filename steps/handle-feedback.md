@@ -45,4 +45,4 @@ Every reply you post and every reflection or note you write follows the standard
 
 @include plain-language
 
-Never merge. Never edit code here - route rework to WATCHED and let the write-code agent push.
+Never merge. Never edit code here - route rework to WATCHED and let REWORKER push.
