@@ -6,3 +6,4 @@ test-fan-sizing: implement-features resolve-conflict scope-and-code write-code
 spec-amendment-read: build-workflow implement-features review-code review-workflow write-code
 cross-item-gate: design-workflow scope-and-code spec-writer
 test-failure-kinds: implement-features resolve-conflict
+closing-note-deviation: build-workflow implement-features scope-and-code write-code
