@@ -63,7 +63,7 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
     - Confirm `## Deferred findings` (step 7) is present, and is not a "None" that a defect recorded elsewhere in this design's own prose contradicts.
     - Check the design mermaid itself the way `lc workflow check` checks a built graph: every outcome named in the stage/gate/trigger descriptions has a drawn edge, and no drawn edge names an outcome nothing in those descriptions produces.
 
-12. `lc done STEP done` (-> spec-open-pr). One-line summary. EXIT.
+12. `lc done STEP done --note "<note>"` (-> spec-open-pr). One-line summary. The note names, in one sentence, any deviation from BRIEF's design - where this design draws something other than BRIEF described, even for a sound reason - saying what BRIEF called for and what the design does instead, or states "no deviation from BRIEF" when there is none; this includes a BRIEF claim that step 3's verification found false and the design rescoped around. EXIT.
 
 Your reflection, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
