@@ -55,6 +55,7 @@ flowchart TD
 | Step | Who | Does |
 | --- | --- | --- |
 | `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. |
+| `nochange-open-pr` / `nochange-await-merge` | agent / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
 | `feature-open-pr` | agent | Opens the feature PR. |
 | `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failing CI and correct review comments back to `feature-writer` (each capped, then `feature-review-ci`). |

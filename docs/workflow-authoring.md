@@ -45,6 +45,7 @@ flowchart TD
 | --- | --- | --- |
 | `design-workflow` | agent | Draws the workflow-design spec (mermaid + step/gate/trigger descriptions) on a branch in the specs repo, carrying the design mermaid convention and grammar guardrails inline. |
 | `spec-open-pr` / `spec-await-merge` | agent / human | Opens the spec PR; the human reviews the design and merges it (the review gate). |
+| `nochange-open-pr` / `nochange-await-merge` | agent / human | The spec PR's second gate: `design-workflow` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `build-workflow` | agent | Authors the bundle to match the approved design, carrying the full grammar, hook catalog, and self-contained-bundle rule inline. |
 | `code-open-pr` | agent | Rebases on main, pushes, opens the code PR. |
 | `watch-ci` | agent | Watches the `simulate` CI job; routes failing CI and correct review comments back to `build-workflow` (each capped, then `review-ci`). |
