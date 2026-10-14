@@ -1,6 +1,6 @@
 ---
-summary: checks ENGINE_PIN against lightcycle's main and bumps it via a PR when stale
-when-to-use: the nightly engine-pin-stale issue or a failing gate names this repo's ENGINE_PIN as behind lightcycle's main
+summary: checks the repo's engine pin against the engine's main and bumps it via a PR when stale
+when-to-use: the repo's staleness report or a failing gate names its engine pin as behind the engine's main
 ---
 
 # Bump-engine-pin
