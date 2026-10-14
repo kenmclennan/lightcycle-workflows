@@ -57,6 +57,9 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Check shared blocks are carried verbatim
+        run: python3 scripts/check-shared-blocks.py
+
       - name: Install the lc engine
         run: |
           set -euo pipefail

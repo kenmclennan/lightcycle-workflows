@@ -20,6 +20,15 @@ _Cross-repo process (PR-flow, coupled changes) is a driver operation - see the `
 - The periodic retro audit is an **engine service**, not a workflow step - do not wire it here.
 - Hyphens not emdashes. Format markdown with `prettier --prose-wrap=never` - except `workflows/*.md`: its `entry`/`requires`/`workspace`/`phase`/`nodes`/`edges`/`hooks`/`signals` block is significant-whitespace-aligned, not prose, and prettier collapses it onto unreadable single lines. Never run prettier on a `workflows/*.md` file; hand-edit it and match the existing column alignment.
 
+## Copies kept in sync by hand
+
+Five blocks are carried verbatim by several steps, because the engine pins only `steps/` and `workflows/` and an origin-local include would never reach a worker. Their canonical text lives in `shared/<name>.md`, `shared/manifest.txt` lists the steps that carry each, and `scripts/check-shared-blocks.py` (run by the `simulate` CI job) fails when a listed step does not contain its block word for word, ignoring each line's leading indentation (a copy is indented to fit the list it sits in, while `shared/` stays unindented). An entry carrying a block more than once states the count, as in `open-pr*3`. Edit the canonical file first, then every copy.
+
+These copies are not checked, so a change to one must be made in each place:
+
+- The cross-item gate paragraph ("BRIEF may also state a cross-item gate in prose ...") is carried identically by `spec-writer`, `scope-and-code` and `design-workflow`.
+- The self-consistency check and the `## Sources` rules are independently written, shape-adapted copies in `spec-writer`, `design-workflow` and (the check only) `feature-writer`. They intentionally do not share text.
+
 ## The simulate CI job
 
 The CI gate for a workflow change is `.github/workflows/simulate.yml`. For each workflow in the bundle it prints three log sections: `== lc workflow check ci-bundle/<name> ==`, `== lc workflow simulate ci-bundle/<name> ==` and `== lc workflow describe ci-bundle/<name> --mermaid ==`. Read a design's rendered mermaid from the describe section of the latest `push` run at the head sha, never a `schedule` run: a push run installs the engine at `ENGINE_PIN`, a schedule run installs the engine's `main` and can render slightly differently.

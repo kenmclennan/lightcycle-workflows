@@ -1,0 +1,5 @@
+squash-procedure: amend-writer build-workflow feature-writer implement-features scope-and-code spec-writer write-code
+gh-api-raw-field: build-workflow handle-feedback open-pr*3 review-code review-features review-workflow
+long-running-commands: implement-features resolve-conflict review-code scope-and-code write-code
+spec-amendment-record: build-workflow implement-features write-code
+spec-amendment-read: review-code review-workflow
