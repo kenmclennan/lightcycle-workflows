@@ -2,4 +2,6 @@ squash-procedure: amend-writer build-workflow feature-writer implement-features 
 gh-api-raw-field: build-workflow handle-feedback open-pr*3 review-code review-features review-workflow
 long-running-commands: implement-features resolve-conflict review-code scope-and-code write-code
 spec-amendment-record: build-workflow implement-features write-code
-spec-amendment-read: review-code review-workflow
+test-fan-sizing: implement-features resolve-conflict scope-and-code write-code
+spec-amendment-read: build-workflow implement-features review-code review-workflow write-code
+cross-item-gate: design-workflow scope-and-code spec-writer
