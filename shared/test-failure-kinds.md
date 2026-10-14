@@ -1,0 +1,1 @@
+An infrastructure failure (a container didn't start, an OOM kill, a port already taken) asserted nothing and may be retried; an assertion failure - a test or scenario ran and its expectation didn't hold - is a regression until proven otherwise, and a second green run does not clear it.

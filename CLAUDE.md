@@ -22,7 +22,7 @@ _Cross-repo process (PR-flow, coupled changes) is a driver operation - see the `
 
 ## Copies kept in sync by hand
 
-Seven blocks are carried verbatim by several steps, because the engine pins only `steps/` and `workflows/` and an origin-local include would never reach a worker. Their canonical text lives in `shared/<name>.md`, `shared/manifest.txt` lists the steps that carry each, and `scripts/check-shared-blocks.py` (run by the `simulate` CI job) fails when a listed step does not contain its block word for word, ignoring each line's leading indentation (a copy is indented to fit the list it sits in, while `shared/` stays unindented). An entry carrying a block more than once states the count, as in `open-pr*3`. Edit the canonical file first, then every copy.
+Eight blocks are carried verbatim by several steps, because the engine pins only `steps/` and `workflows/` and an origin-local include would never reach a worker. Their canonical text lives in `shared/<name>.md`, `shared/manifest.txt` lists the steps that carry each, and `scripts/check-shared-blocks.py` (run by the `simulate` CI job) fails when a listed step does not contain its block word for word, ignoring each line's leading indentation (a copy is indented to fit the list it sits in, while `shared/` stays unindented). An entry carrying a block more than once states the count, as in `open-pr*3`. Edit the canonical file first, then every copy.
 
 These copies are not checked and intentionally do not share text:
 
