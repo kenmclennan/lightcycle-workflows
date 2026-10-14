@@ -1,6 +1,6 @@
 # Await-merge (you + driver)
 
-A PR is green, comments resolved, and rebased on the tip of main - ready to merge. You merge it, unless an active `lightcycle:autopilot` run's Scope Statement has explicitly granted the driver merge authority for this item - then the driver merges it directly, per that grant. The driver runs this skill either way, to set it up and record the outcome.
+A PR is green and comments resolved - ready to merge. When the base requires up-to-date branches, the pool's monitor keeps the PR current with main; otherwise it is current only as of the last coder pass and may be behind. An engine branch update leaves a note on the gate, and CI must be green on the new head before you merge. You merge it, unless an active `lightcycle:autopilot` run's Scope Statement has explicitly granted the driver merge authority for this item - then the driver merges it directly, per that grant. The driver runs this skill either way, to set it up and record the outcome.
 
 1. `lc show STEP`. The PR is on the phase run: take the `.runs` entry whose `pass` matches the step's `.pass` and whose `phase` is the one this gate sits in (`lc workflow describe <workflow>` names it), and open its `pr` on GitHub. A pass can have more than one run open at once, so match on both - `.pr` is on the claim JSON only, and `lc show` does not carry it.
 2. Confirm CI is green and review comments are resolved; summarise the PR for the human.
