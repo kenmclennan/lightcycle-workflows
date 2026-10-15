@@ -137,7 +137,9 @@ edges:
   nochange-open-pr          done               nochange-await-merge
   spec-await-merge          changes            spec-writer
   nochange-await-merge      changes            spec-writer
+  nochange-await-merge      head-moved         nochange-await-merge
   spec-await-merge          spec-merged        feature-writer
+  spec-await-merge          head-moved         spec-await-merge
   feature-writer            done               feature-open-pr
   feature-open-pr           done               feature-poll-ci      primary
   feature-poll-ci           succeeded          feature-watch-ci
@@ -151,6 +153,7 @@ edges:
   review-features           rejected           feature-writer
   feature-await-merge       changes            feature-writer
   feature-await-merge       features-merged    implement-features
+  feature-await-merge       head-moved         feature-poll-ci
   implement-features        done               code-open-pr
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
@@ -168,6 +171,7 @@ edges:
   code-await-merge          changes            implement-features
   code-await-merge          conflicted         resolve-conflict
   code-await-merge          gave-up            review-conflict
+  code-await-merge          head-moved         poll-ci
   resolve-conflict          resolved           code-open-pr         primary
   resolve-conflict          escalate           review-conflict
   amend-writer              done               amend-open-pr
@@ -181,6 +185,7 @@ edges:
   amend-watch-ci            review-rework      amend-writer
   amend-await-merge         changes            amend-writer
   amend-await-merge         scenario-merged    implement-features
+  amend-await-merge         head-moved         amend-poll-ci
   review-ci                 reviewed
   feature-review-ci         reviewed
   amend-review-ci           reviewed
@@ -201,12 +206,16 @@ hooks:
   pr_close              feature-await-merge   abandoned
   pr_close              code-await-merge      abandoned
   pr_feedback           spec-await-merge      spec-handle-feedback
+  pr_head_moved         spec-await-merge      head-moved
   pr_feedback           nochange-await-merge  nochange-handle-feedback
+  pr_head_moved         nochange-await-merge  head-moved
   pr_feedback           feature-await-merge   feature-handle-feedback
+  pr_head_moved         feature-await-merge   head-moved
   pr_feedback           code-await-merge      code-handle-feedback
   pr_conflict           code-await-merge      conflicted
   pr_conflict_cap       code-await-merge      3
   pr_conflict_escalate  code-await-merge      gave-up
+  pr_head_moved         code-await-merge      head-moved
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
@@ -222,6 +231,7 @@ hooks:
   pr_merge              amend-await-merge     scenario-merged
   pr_close              amend-await-merge     abandoned
   pr_feedback           amend-await-merge     amend-handle-feedback
+  pr_head_moved         amend-await-merge     head-moved
   ci_success            amend-poll-ci         succeeded
   ci_failure            amend-poll-ci         failed
   ci_failed_cap         amend-watch-ci        ci-failed      3  amend-review-ci

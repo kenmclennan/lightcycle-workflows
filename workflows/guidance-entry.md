@@ -50,6 +50,7 @@ edges:
   await-merge       changes        guidance-writer
   await-merge       conflicted     resolve-conflict
   await-merge       gave-up        review-conflict
+  await-merge       head-moved     check-entries
   resolve-conflict  resolved       open-pr           primary
   resolve-conflict  escalate       review-conflict
   handle-feedback   done
@@ -62,6 +63,7 @@ hooks:
   pr_conflict           await-merge  conflicted
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
+  pr_head_moved         await-merge  head-moved
   mention_token         await-merge  @lc
 
 signals:
