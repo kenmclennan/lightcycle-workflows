@@ -63,6 +63,7 @@ edges:
   await-merge       changes        scope-and-code
   await-merge       conflicted     resolve-conflict
   await-merge       gave-up        review-conflict
+  await-merge       head-moved     poll-ci
   resolve-conflict  resolved       open-pr           primary
   resolve-conflict  escalate       review-conflict
   review-scope      rescoped       scope-and-code
@@ -77,6 +78,7 @@ hooks:
   pr_conflict           await-merge  conflicted
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
+  pr_head_moved         await-merge  head-moved
   ci_success            poll-ci      succeeded
   ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci

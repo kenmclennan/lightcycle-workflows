@@ -85,7 +85,9 @@ edges:
   nochange-open-pr          done           nochange-await-merge
   spec-await-merge          changes        spec-writer
   nochange-await-merge      changes        spec-writer
+  nochange-await-merge      head-moved     nochange-await-merge
   spec-await-merge          spec-merged    write-code
+  spec-await-merge          head-moved     spec-await-merge
   write-code                done           code-open-pr
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
@@ -102,6 +104,7 @@ edges:
   code-await-merge          changes        write-code
   code-await-merge          conflicted     resolve-conflict
   code-await-merge          gave-up        review-conflict
+  code-await-merge          head-moved     poll-ci
   resolve-conflict          resolved       code-open-pr      primary
   resolve-conflict          escalate       review-conflict
   review-ci                 reviewed
@@ -118,11 +121,14 @@ hooks:
   pr_close              nochange-await-merge  abandoned
   pr_close              code-await-merge      abandoned
   pr_feedback           spec-await-merge      spec-handle-feedback
+  pr_head_moved         spec-await-merge      head-moved
   pr_feedback           nochange-await-merge  nochange-handle-feedback
+  pr_head_moved         nochange-await-merge  head-moved
   pr_feedback           code-await-merge      code-handle-feedback
   pr_conflict           code-await-merge      conflicted
   pr_conflict_cap       code-await-merge      3
   pr_conflict_escalate  code-await-merge      gave-up
+  pr_head_moved         code-await-merge      head-moved
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
