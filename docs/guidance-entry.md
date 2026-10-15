@@ -38,8 +38,8 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `guidance-writer` | agent | Writes, edits or retires entries from the brief, following the repo's `CONVENTIONS.md`; every entry is left `draft` (or `deprecated`) with no `verified` record, and the finding's source is recorded on the item and in the commit body. |
-| `check-entries` | agent | Runs an embedded script over every changed entry: front matter, `type: Guidance`, inline `applies-to` lists, a concept page per facet, valid step names, valid `status`, no deleted entries. Runs again after the gate, when it also requires every `stable` entry to carry a `verified` record. |
+| `guidance-writer` | agent | Writes, edits or retires entries from the brief, following the repo's `CONVENTIONS.md`; every entry is left `draft` (or `deprecated`) with no `verified` record (except a context-only edit, which keeps both), carries `purpose`, `when` and `why` and no item id, and the finding's source is recorded on the item and in the commit body. |
+| `check-entries` | agent | Runs an embedded script over every changed entry: front matter, `type: Guidance`, inline `applies-to` lists, a concept page per facet, valid step names, valid `status`, no deleted entries, a non-empty `purpose`, `when` and `why`, no item id. An entry whose only change is those three fields keeps its `stable` status and `verified` record. Runs again after the gate, when it also requires every `stable` entry to carry a `verified` record. |
 | `open-pr` | agent | Rebases on main, pushes, opens the PR. |
 | `verify-entries` | human | The only place an entry becomes `stable`: on the human's explicit per-entry word the driver writes `status: stable` and `verified`, or the human edits the front matter themselves. `left-draft` merges the entries as `draft`, which is never delivered. |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
