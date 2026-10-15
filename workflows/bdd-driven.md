@@ -219,7 +219,6 @@ hooks:
   mention_token         nochange-await-merge  @lc
   mention_token         feature-await-merge   @lc
   mention_token         code-await-merge      @lc
-  review_bot_allowlist  code-await-merge      copilot-pull-request-reviewer[bot]
   pr_merge              amend-await-merge     scenario-merged
   pr_close              amend-await-merge     abandoned
   pr_feedback           amend-await-merge     amend-handle-feedback
@@ -228,7 +227,6 @@ hooks:
   ci_failed_cap         amend-watch-ci        ci-failed      3  amend-review-ci
   review_rounds_cap     amend-watch-ci        review-rework  amend-review-ci
   mention_token         amend-await-merge     @lc
-  review_bot_allowlist  amend-await-merge     copilot-pull-request-reviewer[bot]
 
 signals:
   spec-await-merge      resets            changes

@@ -130,7 +130,6 @@ hooks:
   mention_token         spec-await-merge      @lc
   mention_token         nochange-await-merge  @lc
   mention_token         code-await-merge      @lc
-  review_bot_allowlist  code-await-merge      copilot-pull-request-reviewer[bot]
 
 signals:
   spec-await-merge      resets            changes

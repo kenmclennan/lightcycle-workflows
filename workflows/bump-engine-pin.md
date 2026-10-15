@@ -84,7 +84,6 @@ hooks:
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
   review_rounds_cap     watch-ci     review-rework  review-ci
   mention_token         await-merge  @lc
-  review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]
 
 signals:
   open-pr           conflicts         ~conflict

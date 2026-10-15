@@ -63,7 +63,6 @@ hooks:
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
   mention_token         await-merge  @lc
-  review_bot_allowlist  await-merge  copilot-pull-request-reviewer[bot]
 
 signals:
   open-pr           conflicts         ~conflict
