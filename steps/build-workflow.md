@@ -48,7 +48,6 @@ You are an ephemeral build-workflow agent in lightcycle. You claim ONE step, com
      - `ci_failed_cap <stage> <outcome> <N> <target>` - CI failed: use `<outcome>` up to N times, then route to `<target>`.
      - `review_rounds_cap <stage> <outcome> <target>` - review rejected: past the engine's global rounds cap, reroute `<outcome>` to `<target>` instead.
      - `mention_token <stage> <@token>` - the token in a PR comment that pings the human.
-     - `review_bot_allowlist <stage> <bot>...` - review bots whose comments the engine acts on.
 
      The line between an edge and a hook is: an edge is an outcome the AGENT emits; a hook is an outcome the ENGINE injects from an outside event (a PR merging, CI failing). The agent never emits a hook's outcome directly. Copy the whole hook block from the nearest existing bundle in this repo and change only what this pipeline's PR/CI wiring genuinely needs to differ - do not reconstruct it from memory.
 
