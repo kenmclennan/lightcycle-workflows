@@ -15,7 +15,7 @@ You are an ephemeral check-entries agent in lightcycle. You claim ONE step, comp
 1. CLAIM: `lc claim agent`. If nothing, say "no work" and EXIT. The printed JSON is your step; take `.id` as STEP, `.item` as ITEM, `.workspace` as WORKSPACE, and `.branch` as BRANCH. Take `.notes` as NOTES and read its closing-note line, of the form `from <stage> (<outcome>): <text>`, for the stage the item came from.
 2. MODE: if the line names `guidance-writer`, the mode is `draft`. If it names `verify-entries`, the mode is `final`. If there is no such line, or it names any other stage, `lc set STEP --state waiting --needs "check-entries was reached from a stage other than guidance-writer or verify-entries" --reason "<the notes line you found>"`, then EXIT.
 3. WORKSPACE: `cd WORKSPACE`. It is the isolated worktree on branch `BRANCH`; do NOT `lc attach` the branch yourself and NEVER run `git checkout`/`git branch`/`git worktree` in the lightcycle root. Run `git fetch origin`. Do NOT rebase or edit: the check reads the branch exactly as it stands.
-4. RUN THE CHECK: write the script below to a file outside WORKSPACE (for example under `$TMPDIR`), then run it from WORKSPACE as `python3 -I <file> <MODE>`, with MODE `draft` or `final`. It compares the branch head with `origin/main` and checks every changed `.md` file (files named `index.md` and `CONVENTIONS.md` are skipped). Both modes fail on: front matter missing or malformed; `type: Guidance` entries with no `applies-to` mapping; `facets` or `steps` not an inline list on one line; a facet with no `<facet>.md` concept page anywhere in the tree; a step not a bare name or `<origin>/<step>`; a `status` other than `draft`, `stable` or `deprecated`; a changed file with no `type: Guidance` that no entry names as a facet; and a deleted entry. `draft` mode also fails any entry that is `stable` or carries a `verified` record. `final` mode instead fails a `stable` entry whose `verified` record is missing or empty.
+4. RUN THE CHECK: write the script below to a file outside WORKSPACE (for example under `$TMPDIR`), then run it from WORKSPACE as `python3 -I <file> <MODE>`, with MODE `draft` or `final`. It compares the branch head with `origin/main` and checks every changed `.md` file (files named `index.md` and `CONVENTIONS.md` are skipped). Both modes fail on: front matter missing or malformed; `type: Guidance` entries with no `applies-to` mapping; `facets` or `steps` not an inline list on one line; a facet with no `<facet>.md` concept page anywhere in the tree; a step not a bare name or `<origin>/<step>`; a `status` other than `draft`, `stable` or `deprecated`; a changed file with no `type: Guidance` that no entry names as a facet; and a deleted entry. Both modes also fail a `type: Guidance` entry missing a non-empty `purpose`, `when` or `why`, and an entry whose file text names an item id. `draft` mode also fails any entry that is `stable` or carries a `verified` record, unless the entry is context-only against `origin/main` (the same body bytes after the closing `---` and the same front matter apart from `purpose`, `when` and `why`), in which case its existing `stable` status and `verified` record pass. `final` mode instead fails a `stable` entry whose `verified` record is missing or empty.
 
 ```python
 import re
@@ -26,6 +26,9 @@ from pathlib import Path
 mode = sys.argv[1]
 STEP = re.compile(r"^([a-z0-9][a-z0-9-]*/)?[a-z0-9][a-z0-9-]*$")
 LIST = re.compile(r"^\[(.*)\]$")
+ITEM_ID = re.compile(r"\b([A-Z][A-Z0-9]*)-\d+(?:\.\d+)*\b")
+NON_ITEM = {"UTF", "SHA", "ISO", "RFC", "CVE", "TLS", "SSL", "HTTP", "AES", "IEEE", "PEP"}
+CONTEXT = ("purpose", "when", "why")
 failures = []
 
 
@@ -58,6 +61,30 @@ def parse(text):
             top[key.strip()] = value.strip()
             section = key.strip() if not value.strip() else None
     return top, nested
+
+
+def item_ids(text):
+    return [m.group(0) for m in ITEM_ID.finditer(text) if m.group(1) not in NON_ITEM]
+
+
+def split_raw(text):
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        return None
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if end is None:
+        return None
+    front = [ln for ln in lines[1:end] if ln.split(":", 1)[0] not in CONTEXT or ln[:1] in " \t"]
+    return front, "".join(lines[end + 1:])
+
+
+def context_only(path):
+    try:
+        old = split_raw(git("show", f"origin/main:{path}"))
+    except subprocess.CalledProcessError:
+        return False
+    new = split_raw(Path(path).read_text())
+    return old is not None and new is not None and old == new
 
 
 def inline_list(value):
@@ -107,11 +134,17 @@ for path, (top, nested) in parsed.items():
     status = top.get("status")
     if status not in ("draft", "stable", "deprecated"):
         failures.append(f"{path}: status '{status}' is not draft, stable or deprecated")
+    for field in CONTEXT:
+        if not top.get(field):
+            failures.append(f"{path}: missing or empty front-matter field '{field}'")
+    for found in item_ids(Path(path).read_text()):
+        failures.append(f"{path}: names item id '{found}' - record its origin on the item's finding artifact instead")
     verified = top.get("verified", "")
     if mode == "draft":
-        if status == "stable":
+        keeps = (status == "stable" or "verified" in top) and context_only(path)
+        if status == "stable" and not keeps:
             failures.append(f"{path}: writer output must not be status: stable")
-        if "verified" in top:
+        if "verified" in top and not keeps:
             failures.append(f"{path}: writer output must not carry a verified record")
     elif status == "stable" and not verified:
         failures.append(f"{path}: stable entry has no verified record")
