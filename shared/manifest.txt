@@ -7,3 +7,4 @@ spec-amendment-read: build-workflow implement-features review-code review-workfl
 cross-item-gate: design-workflow scope-and-code spec-writer
 test-failure-kinds: implement-features resolve-conflict
 closing-note: build-workflow handle-feedback implement-features resolve-conflict scope-and-code watch-ci write-code guidance-writer
+remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features open-guidance-pr open-pr resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-writer watch-ci write-code
