@@ -1,5 +1,5 @@
 squash-procedure: amend-writer build-workflow feature-writer implement-features scope-and-code spec-writer write-code
-gh-api-raw-field: handle-feedback open-guidance-pr*3 open-pr*3 review-code review-features review-workflow
+gh-api-raw-field: handle-feedback open-pr*3 review-code review-features review-workflow
 long-running-commands: implement-features resolve-conflict review-code scope-and-code write-code
 spec-amendment-record: build-workflow implement-features write-code
 test-fan-sizing: implement-features resolve-conflict scope-and-code write-code
@@ -7,4 +7,4 @@ spec-amendment-read: build-workflow implement-features review-code review-workfl
 cross-item-gate: design-workflow scope-and-code spec-writer
 test-failure-kinds: implement-features resolve-conflict
 closing-note: build-workflow handle-feedback implement-features resolve-conflict scope-and-code watch-ci write-code guidance-writer
-remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features open-guidance-pr open-pr resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-writer watch-ci write-code
+remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features open-pr resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-writer watch-ci write-code
