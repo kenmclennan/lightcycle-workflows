@@ -2,7 +2,7 @@
 
 **Scheduled, not filed by hand.** The engine fires this workflow from the `schedule:` block in its front matter once an operator enables that schedule in config; the bundle only suggests it and enables nothing. Each firing is one item, one pass, no PR.
 
-A scheduled short prose summary of the work closed on one day, grouped by what it improved. 07:00 is deliberate: the guard checks today first, which is empty then, so it reaches yesterday and the summary covers the whole previous day.
+A scheduled plain-text list of the work closed on one day, in up to three sections (`Delivered`, `Fixed`, `Improved`), written so it can be read out at a standup. 07:00 is deliberate: the guard checks today first, which is empty then, so it reaches yesterday and the summary covers the whole previous day.
 
 **Suggested schedule:** `cron: 0 7 * * *`, `guard: day-unsummarised`.
 
@@ -22,4 +22,4 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `daily-summary` | agent | Reads the day's closes from the item description, groups them by theme, attaches the `summary` artifact and ends `done`. `abandoned` is for a driver who drops a summary they do not want. |
+| `daily-summary` | agent | Reads the day's closes from the item description, sorts them into `Delivered` / `Fixed` / `Improved` bullets, attaches the `summary` artifact and ends `done`. `abandoned` is for a driver who drops a summary they do not want. |
