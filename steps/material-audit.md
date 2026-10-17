@@ -1,5 +1,7 @@
 ---
 model: sonnet
+produces:
+  findings: optional
 ---
 
 # Material audit

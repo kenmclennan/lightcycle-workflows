@@ -1,5 +1,6 @@
 ---
 escalation: true
+presents: pr
 ---
 
 # Review-ci (you + driver)

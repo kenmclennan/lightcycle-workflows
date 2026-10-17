@@ -1,6 +1,7 @@
 ---
 produces:
   pr: required
+presents: pr
 ---
 
 # Await-merge (you + driver)

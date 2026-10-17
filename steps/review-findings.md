@@ -1,3 +1,7 @@
+---
+presents: artifact:findings
+---
+
 # Review-findings (you + driver)
 
 An audit step found things worth a human's attention and attached its digest as the `findings` artifact. The audit files nothing and edits nothing; this gate is where a human decides what, if anything, becomes work.
