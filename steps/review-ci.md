@@ -1,7 +1,7 @@
 ---
 escalation: true
 presents: pr
-detail: [pr, report]
+detail: [pr, in:report, outcome]
 ---
 
 # Review-ci (you + driver)
