@@ -1,12 +1,12 @@
 ---
 escalation: true
-presents: report
-detail: [report]
+presents: in:report
+detail: [in:report, outcome]
 ---
 
 # Review-scope (you + driver)
 
-`scope-and-code` decided this brief needs more than a single-PR, no-spec lane can carry - too many unrelated call sites, a design decision reasonable people could disagree on, or simply not small. A human reads the note it left and decides where this goes next.
+`scope-and-code` decided this brief needs more than a single-PR, no-spec lane can carry - too many unrelated call sites, a design decision reasonable people could disagree on, or simply not small. A human reads the note it left (the `report` row in the Detail tab) and decides where this goes next.
 
 `review-scope` only routes onward on `rescoped` - closing it any other way, or leaving it as the item's only open step, ends the item outright rather than sending it back for another attempt.
 
