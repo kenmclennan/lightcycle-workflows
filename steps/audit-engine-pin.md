@@ -4,6 +4,7 @@ accepts:
   branch: optional
 produces:
   branch: required
+detail: [outcome, report, out:branch]
 ---
 
 # Audit-engine-pin

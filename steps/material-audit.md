@@ -2,6 +2,7 @@
 model: sonnet
 produces:
   findings: optional
+detail: [outcome, report, out:findings]
 ---
 
 # Material audit

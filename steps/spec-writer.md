@@ -2,6 +2,7 @@
 model: sonnet
 produces:
   spec: required
+detail: [outcome, report, out:spec]
 ---
 
 # Spec-writer

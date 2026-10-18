@@ -1,5 +1,6 @@
 ---
 model: sonnet
+detail: [outcome, report]
 ---
 
 # Resolve-conflict (conflict resolver)

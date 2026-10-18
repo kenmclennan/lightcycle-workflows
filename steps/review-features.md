@@ -3,6 +3,7 @@ model: sonnet
 accepts:
   spec: required
   branch: required
+detail: [outcome, report]
 ---
 
 # Review-features
