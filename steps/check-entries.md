@@ -6,6 +6,7 @@ accepts:
 produces:
   branch: required
   pr: optional
+detail: [outcome, report, out:branch, out:pr]
 ---
 
 # Check-entries

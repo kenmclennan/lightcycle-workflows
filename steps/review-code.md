@@ -3,6 +3,9 @@ model: sonnet
 accepts:
   spec: required
   branch: required
+produces:
+  checks-run: optional
+detail: [outcome, report, out:checks-run]
 ---
 
 # Review-code

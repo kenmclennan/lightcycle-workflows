@@ -1,5 +1,8 @@
 ---
 model: sonnet
+produces:
+  summary: optional
+detail: [outcome, report, out:summary]
 ---
 
 # Daily summary
