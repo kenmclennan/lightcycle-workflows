@@ -91,6 +91,8 @@ edges:
   write-code                done           code-open-pr
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
+  poll-ci                   conflicted     resolve-conflict
+  watch-ci                  conflicted     resolve-conflict
   poll-ci                   succeeded      watch-ci
   poll-ci                   failed         watch-ci
   watch-ci                  done           review-code
@@ -129,6 +131,8 @@ hooks:
   pr_conflict_cap       code-await-merge      3
   pr_conflict_escalate  code-await-merge      gave-up
   pr_head_moved         code-await-merge      head-moved
+  pr_conflict           poll-ci               conflicted
+  pr_conflict           watch-ci              conflicted
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
