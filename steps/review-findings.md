@@ -11,7 +11,7 @@ An audit step found things worth a human's attention and attached its digest as 
 
 1. Read the claim's `inputs.previous.report`, which summarises the findings, and `inputs.previous.outputs.findings`, the full digest. Read the digest, not only the summary.
 2. Go through each finding with the human. For one that warrants work, file it yourself (`lc new item`) with the finding's own brief; the audit never does. A finding the human declines needs no action.
-3. Close with the outcome that says what happened: `lc done STEP filed` when at least one follow-up item was filed from the findings; `lc done STEP reviewed` when the findings were read and none warranted action; `lc done STEP done` when a finding was handled some other way. All three end the item.
+3. Close with the outcome that says what happened: `lc done STEP filed` when at least one follow-up item was filed from the findings; `lc done STEP reviewed` when the findings were read and none warranted action; `lc done STEP done` when a finding was handled some other way. All three end the item. The `--note` on `lc done` names each finding the human declined and the reason, one sentence each, after whatever was filed, because the next audit reads it; a long list of declines is summarised rather than dropped.
 
 The `--note` on `lc done` and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
 
