@@ -5,6 +5,7 @@ accepts:
 produces:
   branch: required
 detail: [outcome, report, out:branch]
+github: heavy
 ---
 
 # Watch-CI
