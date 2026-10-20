@@ -52,6 +52,8 @@ edges:
   scope-and-code    too-big        review-scope
   open-pr           done           poll-ci           primary
   open-pr           conflicted     resolve-conflict
+  poll-ci           conflicted     resolve-conflict
+  watch-ci          conflicted     resolve-conflict
   poll-ci           succeeded      watch-ci
   poll-ci           failed         watch-ci
   watch-ci          done           await-merge       primary
@@ -79,6 +81,8 @@ hooks:
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
   pr_head_moved         await-merge  head-moved
+  pr_conflict           poll-ci      conflicted
+  pr_conflict           watch-ci     conflicted
   ci_success            poll-ci      succeeded
   ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
