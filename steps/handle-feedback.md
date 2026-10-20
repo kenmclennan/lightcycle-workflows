@@ -1,6 +1,7 @@
 ---
 model: sonnet
 detail: [outcome, report]
+github: heavy
 ---
 
 # Handle-Feedback

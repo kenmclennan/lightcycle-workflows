@@ -6,6 +6,7 @@ accepts:
 produces:
   checks-run: optional
 detail: [outcome, report, out:checks-run]
+github: heavy
 ---
 
 # Review-code
