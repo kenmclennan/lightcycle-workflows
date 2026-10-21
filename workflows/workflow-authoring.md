@@ -20,6 +20,8 @@ workspace:
   nochange-open-pr          specs
   nochange-await-merge      specs
   nochange-handle-feedback  specs
+  code-open-pr              project
+  cleanup                   project
 
 phase:
   design-workflow           spec
@@ -97,6 +99,7 @@ edges:
   review-workflow           done           code-await-merge  primary
   review-workflow           rejected       build-workflow
   code-await-merge          merged         cleanup
+  cleanup                   done
   code-await-merge          changes        build-workflow
   code-await-merge          conflicted     resolve-conflict
   code-await-merge          gave-up        review-conflict

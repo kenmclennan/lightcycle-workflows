@@ -56,11 +56,11 @@ flowchart TD
 | --- | --- | --- |
 | `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. |
 | `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. |
-| `nochange-open-pr` / `nochange-await-merge` | agent / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
+| `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
-| `feature-open-pr` | agent | Opens the feature PR. |
+| `feature-open-pr` | script | Opens the feature PR. |
 | `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failing CI and correct review comments back to `feature-writer` (each capped, then `feature-review-ci`). |
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
-| `code-open-pr` -> `cleanup` | agent / human | Same as spec-driven: code PR, CI, review, human merge. |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge. |

@@ -13,6 +13,10 @@ requires: repo
 
 workspace: project
 
+workspace:
+  open-pr  project
+  cleanup  project
+
 phase:
   guidance-writer   entry
   check-entries     entry
@@ -40,6 +44,7 @@ edges:
   open-pr           done           await-merge       primary
   open-pr           conflicted     resolve-conflict
   await-merge       merged         cleanup           primary
+  cleanup           done
   await-merge       changes        guidance-writer
   await-merge       conflicted     resolve-conflict
   await-merge       gave-up        review-conflict

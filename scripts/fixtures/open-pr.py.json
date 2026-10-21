@@ -1,0 +1,4 @@
+{
+  "done": {"outcome": "done", "note": "PR https://github.com/example/repo/pull/1"},
+  "conflicted": {"outcome": "conflicted", "note": "rebase conflicts in README.md"}
+}
