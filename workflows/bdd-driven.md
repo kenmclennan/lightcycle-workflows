@@ -53,6 +53,8 @@ phase:
   feature-await-merge       feature
   feature-review-ci         feature
   feature-handle-feedback   feature
+  feature-resolve-conflict  feature
+  feature-review-conflict   feature
   implement-features        code
   code-open-pr              code
   poll-ci                   code
@@ -70,6 +72,8 @@ phase:
   amend-await-merge         amend
   amend-review-ci           amend
   amend-handle-feedback     amend
+  amend-resolve-conflict    amend
+  amend-review-conflict     amend
   review-conflict           code
 
 display:
@@ -88,6 +92,8 @@ display:
   feature-await-merge       Review scenarios
   feature-review-ci         CI needs a call (scenarios)
   feature-handle-feedback   Reading feedback
+  feature-resolve-conflict  Resolving conflict (scenarios)
+  feature-review-conflict   Resolve conflict (scenarios)
   implement-features        Coding
   code-open-pr              Opening code PR
   poll-ci                   Watching CI
@@ -106,6 +112,8 @@ display:
   amend-await-merge         Review scenario amendment
   amend-review-ci           CI needs a call (scenario amendment)
   amend-handle-feedback     Reading feedback (scenario amendment)
+  amend-resolve-conflict    Resolving conflict (scenario amendment)
+  amend-review-conflict     Resolve conflict (scenario amendment)
 
 nodes:
   spec-open-pr              open-pr
@@ -120,6 +128,8 @@ nodes:
   feature-await-merge       await-merge
   feature-review-ci         review-ci
   feature-handle-feedback   handle-feedback
+  feature-resolve-conflict  resolve-conflict
+  feature-review-conflict   review-conflict
   code-open-pr              open-pr
   code-await-merge          await-merge
   code-handle-feedback      handle-feedback
@@ -129,6 +139,8 @@ nodes:
   amend-await-merge         await-merge
   amend-review-ci           review-ci
   amend-handle-feedback     handle-feedback
+  amend-resolve-conflict    resolve-conflict
+  amend-review-conflict     review-conflict
 
 edges:
   spec-writer               done               spec-open-pr
@@ -142,18 +154,24 @@ edges:
   spec-await-merge          head-moved         spec-await-merge
   feature-writer            done               feature-open-pr
   feature-open-pr           done               feature-poll-ci      primary
+  feature-open-pr           conflicted         feature-resolve-conflict
   feature-poll-ci           succeeded          feature-watch-ci
   feature-poll-ci           failed             feature-watch-ci
+  feature-poll-ci           conflicted         feature-resolve-conflict
   feature-watch-ci          done               review-features
   feature-watch-ci          deferred           review-features
   feature-watch-ci          retried            feature-poll-ci
   feature-watch-ci          ci-failed          feature-writer
   feature-watch-ci          review-rework      feature-writer
+  feature-watch-ci          conflicted         feature-resolve-conflict
   review-features           done               feature-await-merge  primary
   review-features           rejected           feature-writer
   feature-await-merge       changes            feature-writer
   feature-await-merge       features-merged    implement-features
   feature-await-merge       head-moved         feature-poll-ci
+  feature-resolve-conflict  resolved           feature-open-pr      primary
+  feature-resolve-conflict  escalate           feature-review-conflict
+  feature-review-conflict   resolved           feature-open-pr      primary
   implement-features        done               code-open-pr
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
@@ -178,16 +196,22 @@ edges:
   resolve-conflict          escalate           review-conflict
   amend-writer              done               amend-open-pr
   amend-open-pr             done               amend-poll-ci        primary
+  amend-open-pr             conflicted         amend-resolve-conflict
   amend-poll-ci             succeeded          amend-watch-ci
   amend-poll-ci             failed             amend-watch-ci
+  amend-poll-ci             conflicted         amend-resolve-conflict
   amend-watch-ci            done               amend-await-merge    primary
   amend-watch-ci            deferred           amend-await-merge
   amend-watch-ci            retried            amend-poll-ci
   amend-watch-ci            ci-failed          amend-writer
   amend-watch-ci            review-rework      amend-writer
+  amend-watch-ci            conflicted         amend-resolve-conflict
   amend-await-merge         changes            amend-writer
   amend-await-merge         scenario-merged    implement-features
   amend-await-merge         head-moved         amend-poll-ci
+  amend-resolve-conflict    resolved           amend-open-pr        primary
+  amend-resolve-conflict    escalate           amend-review-conflict
+  amend-review-conflict     resolved           amend-open-pr        primary
   review-ci                 reviewed
   feature-review-ci         reviewed
   amend-review-ci           reviewed
@@ -224,6 +248,8 @@ hooks:
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
   review_rounds_cap     watch-ci              review-rework  review-ci
+  pr_conflict           feature-poll-ci       conflicted
+  pr_conflict           feature-watch-ci      conflicted
   ci_success            feature-poll-ci       succeeded
   ci_failure            feature-poll-ci       failed
   ci_failed_cap         feature-watch-ci      ci-failed      3  feature-review-ci
@@ -236,6 +262,8 @@ hooks:
   pr_close              amend-await-merge     abandoned
   pr_feedback           amend-await-merge     amend-handle-feedback
   pr_head_moved         amend-await-merge     head-moved
+  pr_conflict           amend-poll-ci         conflicted
+  pr_conflict           amend-watch-ci        conflicted
   ci_success            amend-poll-ci         succeeded
   ci_failure            amend-poll-ci         failed
   ci_failed_cap         amend-watch-ci        ci-failed      3  amend-review-ci
@@ -243,26 +271,30 @@ hooks:
   mention_token         amend-await-merge     @lc
 
 signals:
-  spec-await-merge      resets            changes
-  nochange-await-merge  resets            changes
-  review-features       review_rounds     rejected
-  review-features       resets            rejected
-  feature-await-merge   resets            changes
-  feature-watch-ci      review_rounds     review-rework
-  feature-watch-ci      resets            ci-failed
-  feature-watch-ci      resets            review-rework
-  review-code           review_rounds     rejected
-  review-code           resets            rejected
-  code-open-pr          conflicts         ~conflict
-  watch-ci              review_rounds     review-rework
-  watch-ci              resets            ci-failed
-  watch-ci              resets            review-rework
-  code-await-merge      resets            changes
-  resolve-conflict      resolve_attempts  escalate
-  amend-await-merge     resets            changes
-  amend-watch-ci        review_rounds     review-rework
-  amend-watch-ci        resets            ci-failed
-  amend-watch-ci        resets            review-rework
+  spec-await-merge          resets            changes
+  nochange-await-merge      resets            changes
+  review-features           review_rounds     rejected
+  review-features           resets            rejected
+  feature-await-merge       resets            changes
+  feature-watch-ci          review_rounds     review-rework
+  feature-watch-ci          resets            ci-failed
+  feature-watch-ci          resets            review-rework
+  feature-open-pr           conflicts         ~conflict
+  feature-resolve-conflict  resolve_attempts  escalate
+  review-code               review_rounds     rejected
+  review-code               resets            rejected
+  code-open-pr              conflicts         ~conflict
+  watch-ci                  review_rounds     review-rework
+  watch-ci                  resets            ci-failed
+  watch-ci                  resets            review-rework
+  code-await-merge          resets            changes
+  resolve-conflict          resolve_attempts  escalate
+  amend-await-merge         resets            changes
+  amend-watch-ci            review_rounds     review-rework
+  amend-watch-ci            resets            ci-failed
+  amend-watch-ci            resets            review-rework
+  amend-open-pr             conflicts         ~conflict
+  amend-resolve-conflict    resolve_attempts  escalate
 
 disposition:
   merged            completed
