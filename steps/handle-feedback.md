@@ -31,7 +31,7 @@ You are an ephemeral PR-feedback agent in lightcycle. You claim ONE step, decide
 
    **Binding:**
 
-   ```
+   ```text
    SPEC CHANGE: <what the spec currently says, quoted or closely paraphrased>
      now: <what it should say instead>
    ```

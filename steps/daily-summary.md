@@ -5,6 +5,8 @@ produces:
 detail: [outcome, report, out:summary]
 ---
 
+<!-- markdownlint-disable MD029 MD038 -->
+
 # Daily summary
 
 You are the daily work summarizer. A schedule fires you for a day with closes not yet summarised. Your job is to write a short list of what got done that day, readable aloud at a standup, for the Report tab.

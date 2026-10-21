@@ -10,7 +10,7 @@ This only applies when either (a) the claim's `inputs.previous.report` contains 
 
    **Binding:**
 
-   ```
+   ```text
    ## Amendment (<STEP>, <YYYY-MM-DD>)
 
    Supersedes: <what it overrides, matching the SPEC CHANGE: note's first line>
