@@ -57,11 +57,13 @@ edges:
   open-pr           conflicted     resolve-conflict
   poll-ci           succeeded      watch-ci
   poll-ci           failed         watch-ci
+  poll-ci           conflicted     resolve-conflict
   watch-ci          done           await-merge       primary
   watch-ci          deferred       await-merge
   watch-ci          retried        poll-ci
   watch-ci          ci-failed      audit-engine-pin
   watch-ci          review-rework  audit-engine-pin
+  watch-ci          conflicted     resolve-conflict
   await-merge       merged         cleanup
   await-merge       changes        audit-engine-pin
   await-merge       conflicted     resolve-conflict
@@ -81,6 +83,8 @@ hooks:
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
   pr_head_moved         await-merge  head-moved
+  pr_conflict           poll-ci      conflicted
+  pr_conflict           watch-ci     conflicted
   ci_success            poll-ci      succeeded
   ci_failure            poll-ci      failed
   ci_failed_cap         watch-ci     ci-failed  3  review-ci
