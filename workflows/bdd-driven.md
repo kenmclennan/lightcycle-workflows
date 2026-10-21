@@ -168,6 +168,8 @@ edges:
   review-features           rejected           feature-writer
   feature-await-merge       changes            feature-writer
   feature-await-merge       features-merged    implement-features
+  feature-await-merge       conflicted         feature-resolve-conflict
+  feature-await-merge       gave-up            feature-review-conflict
   feature-await-merge       head-moved         feature-poll-ci
   feature-resolve-conflict  resolved           feature-open-pr      primary
   feature-resolve-conflict  escalate           feature-review-conflict
@@ -208,6 +210,8 @@ edges:
   amend-watch-ci            conflicted         amend-resolve-conflict
   amend-await-merge         changes            amend-writer
   amend-await-merge         scenario-merged    implement-features
+  amend-await-merge         conflicted         amend-resolve-conflict
+  amend-await-merge         gave-up            amend-review-conflict
   amend-await-merge         head-moved         amend-poll-ci
   amend-resolve-conflict    resolved           amend-open-pr        primary
   amend-resolve-conflict    escalate           amend-review-conflict
@@ -237,6 +241,9 @@ hooks:
   pr_head_moved         nochange-await-merge  head-moved
   pr_feedback           feature-await-merge   feature-handle-feedback
   pr_head_moved         feature-await-merge   head-moved
+  pr_conflict           feature-await-merge   conflicted
+  pr_conflict_cap       feature-await-merge   3
+  pr_conflict_escalate  feature-await-merge   gave-up
   pr_feedback           code-await-merge      code-handle-feedback
   pr_conflict           code-await-merge      conflicted
   pr_conflict_cap       code-await-merge      3
@@ -262,6 +269,9 @@ hooks:
   pr_close              amend-await-merge     abandoned
   pr_feedback           amend-await-merge     amend-handle-feedback
   pr_head_moved         amend-await-merge     head-moved
+  pr_conflict           amend-await-merge     conflicted
+  pr_conflict_cap       amend-await-merge     3
+  pr_conflict_escalate  amend-await-merge     gave-up
   pr_conflict           amend-poll-ci         conflicted
   pr_conflict           amend-watch-ci        conflicted
   ci_success            amend-poll-ci         succeeded
