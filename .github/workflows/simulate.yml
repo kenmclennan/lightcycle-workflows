@@ -15,6 +15,22 @@ permissions:
   issues: write
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Check formatting (workflows/*.md is hand-aligned and exempt)
+        run: npx --yes prettier --check --prose-wrap=never 'steps/*.md' 'docs/*.md'
+
+      - name: Lint markdown
+        run: npx --yes markdownlint-cli2 'steps/*.md' 'workflows/*.md' 'docs/*.md'
+
   simulate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
