@@ -6,5 +6,5 @@ test-fan-sizing: implement-features resolve-conflict scope-and-code write-code
 spec-amendment-read: build-workflow implement-features review-code review-workflow write-code
 cross-item-gate: design-workflow scope-and-code spec-writer
 test-failure-kinds: implement-features resolve-conflict
-closing-note: build-workflow handle-feedback implement-features resolve-conflict scope-and-code watch-ci write-code guidance-writer
-remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features open-pr resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-writer watch-ci write-code
+closing-note: build-workflow handle-feedback implement-features resolve-conflict scope-and-code spec-digest watch-ci write-code guidance-writer
+remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features open-pr resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-digest spec-writer watch-ci write-code
