@@ -16,7 +16,7 @@ Node shape shows who runs each stage: `[ agent-step ]` an ephemeral agent claims
 flowchart TD
     brief(["brief + repo"]) --> SW["spec-writer"]
     subgraph S ["spec phase (specs repo)"]
-        SW --> SOP["spec-open-pr"] --> SAM{{"spec-await-merge"}}
+        SW --> SD["spec-digest"] --> SOP["spec-open-pr"] --> SAM{{"spec-await-merge"}}
         SAM -->|changes| SW
     end
     SAM -->|spec-merged| FW["feature-writer"]
@@ -55,6 +55,7 @@ flowchart TD
 | Step | Who | Does |
 | --- | --- | --- |
 | `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. |
+| `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. |
 | `nochange-open-pr` / `nochange-await-merge` | agent / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
 | `feature-open-pr` | agent | Opens the feature PR. |
