@@ -86,7 +86,8 @@ nodes:
 edges:
   spec-writer               done           spec-digest
   spec-digest               done           spec-open-pr
-  spec-writer               no-change      nochange-open-pr
+  spec-digest               no-change      nochange-open-pr
+  spec-writer               no-change      spec-digest
   spec-open-pr              done           spec-await-merge
   nochange-open-pr          done           nochange-await-merge
   spec-await-merge          changes        spec-writer
