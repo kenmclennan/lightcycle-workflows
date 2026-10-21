@@ -1,0 +1,9 @@
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "BLE001", "RUF013", "DTZ", "SIM115"]
+ignore = ["E501", "E741", "E702", "E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/open-pr.py" = ["SIM115"]
