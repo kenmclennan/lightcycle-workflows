@@ -27,6 +27,10 @@ requires: repo
 
 workspace: project
 
+workspace:
+  open-pr  project
+  cleanup  project
+
 phase:
   audit-engine-pin  bump
   open-pr           bump
@@ -65,6 +69,7 @@ edges:
   watch-ci          review-rework  audit-engine-pin
   watch-ci          conflicted     resolve-conflict
   await-merge       merged         cleanup
+  cleanup           done
   await-merge       changes        audit-engine-pin
   await-merge       conflicted     resolve-conflict
   await-merge       gave-up        review-conflict

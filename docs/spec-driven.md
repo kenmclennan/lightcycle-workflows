@@ -45,12 +45,12 @@ flowchart TD
 | --- | --- | --- |
 | `spec-writer` | agent | Formalizes the brief into a spec on a branch in the specs repo. |
 | `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. |
-| `spec-open-pr` / `spec-await-merge` | agent / human | Opens the spec PR; the human reviews and merges it (the review gate). |
-| `nochange-open-pr` / `nochange-await-merge` | agent / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
+| `spec-open-pr` / `spec-await-merge` | script / human | Opens the spec PR; the human reviews and merges it (the review gate). |
+| `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
-| `code-open-pr` | agent | Rebases on main, pushes, opens the code PR. |
+| `code-open-pr` | script | Rebases on main, pushes, opens the code PR. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
-| `cleanup` | terminal | The item is merged and done. |
+| `cleanup` | script, terminal | The item is merged and done. |

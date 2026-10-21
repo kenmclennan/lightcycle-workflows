@@ -21,6 +21,10 @@ requires: repo
 
 workspace: project
 
+workspace:
+  open-pr  project
+  cleanup  project
+
 phase:
   scope-and-code    change
   open-pr           change
@@ -62,6 +66,7 @@ edges:
   watch-ci          ci-failed      scope-and-code
   watch-ci          review-rework  scope-and-code
   await-merge       merged         cleanup
+  cleanup           done
   await-merge       changes        scope-and-code
   await-merge       conflicted     resolve-conflict
   await-merge       gave-up        review-conflict

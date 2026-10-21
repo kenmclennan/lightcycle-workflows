@@ -37,6 +37,10 @@ workspace:
   nochange-open-pr          specs
   nochange-await-merge      specs
   nochange-handle-feedback  specs
+  feature-open-pr           project
+  code-open-pr              project
+  amend-open-pr             project
+  cleanup                   project
 
 phase:
   spec-writer               spec
@@ -194,6 +198,7 @@ edges:
   review-code               done               code-await-merge     primary
   review-code               rejected           implement-features
   code-await-merge          merged             cleanup
+  cleanup                   done
   code-await-merge          changes            implement-features
   code-await-merge          conflicted         resolve-conflict
   code-await-merge          gave-up            review-conflict

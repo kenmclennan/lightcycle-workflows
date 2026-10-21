@@ -37,7 +37,7 @@ flowchart TD
 | --- | --- | --- |
 | `guidance-writer` | agent | Writes, edits or retires entries from the brief, following the repo's `CONVENTIONS.md`; every entry is left `stable` (or `deprecated` when retired) with no `verified` line, carries `purpose`, `when` and `why` and no item id, and the finding's source is recorded on the item and in the commit body. |
 | `check-entries` | agent | Runs `lc guidance-check` over every changed entry: front matter, `type: Guidance`, inline `applies-to` lists, a concept page per facet, valid step names, valid `status`, no deleted entries, a non-empty `purpose`, `when` and `why`, no item id. Runs again if a push moves the PR head while it waits. |
-| `open-pr` | agent | Rebases on main, pushes, opens the PR. |
+| `open-pr` | script | Rebases on main, pushes, opens the PR. |
 | `await-merge` | human | The human reads the PR and merges it, which is also the approval of every entry in it; or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap). |
-| `cleanup` | terminal | The item is merged and done. |
+| `cleanup` | script, terminal | The item is merged and done. |
