@@ -187,6 +187,19 @@ class OpenPrTest(ScriptCase):
         self.assertIn("pull/9", result.stderr)
         self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
 
+    def test_newest_run_of_the_pass_and_phase_decides_the_recorded_pr(self):
+        self.feature_branch()
+        older = dict(self.lc_show["runs"][0], id="older", pr="https://github.com/o/r/pull/9")
+        newer = dict(self.lc_show["runs"][0], id="newer", pr=None)
+        self.lc_show["runs"] = [older, newer]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
+
     def test_create_error_that_succeeded_server_side_is_used(self):
         self.feature_branch()
         self.gh_state.update(create_error=True, create_server_side=True)
