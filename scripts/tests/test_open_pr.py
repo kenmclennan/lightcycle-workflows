@@ -1,4 +1,6 @@
 import json
+import os
+import subprocess
 import unittest
 
 from tests.harness import ScriptCase, sh
@@ -127,6 +129,51 @@ class OpenPrTest(ScriptCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
         self.assertIn("clash.txt", result.stderr)
+
+    def test_existing_pr_not_recorded_on_the_run_is_attached(self):
+        self.feature_branch()
+        state = self.read_gh_state()
+        state["pulls"].append({
+            "number": 1,
+            "html_url": "https://github.com/o/r/pull/1",
+            "title": "feat(x): add the thing",
+            "body": "<!-- lc:body -->\nold\n<!-- /lc:body -->",
+        })
+        self.gh_state = state
+        self.write_gh_state()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
+
+    def test_existing_pr_already_recorded_is_not_attached_again(self):
+        self.feature_branch()
+        self.assertEqual(self.run_script("open-pr.py").returncode, 0)
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/1"
+        self.write_lc_show()
+        (self.stub / "lc-calls.jsonl").unlink()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_rebase_in_progress_is_aborted_and_the_run_completes(self):
+        self.feature_branch()
+        sh("git", "fetch", "origin", cwd=self.work)
+        env = {**os.environ, "GIT_SEQUENCE_EDITOR": "perl -pi -e 's/^pick/edit/'"}
+        subprocess.run(
+            ["git", "rebase", "-i", "origin/main"], cwd=self.work, env=env, check=True, capture_output=True
+        )
+        self.assertEqual(sh("git", "branch", "--show-current", cwd=self.work).stdout.strip(), "")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertEqual(sh("git", "branch", "--show-current", cwd=self.work).stdout.strip(), "feat/x")
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
 
     def test_recorded_pr_without_a_branch_pr_is_a_divergence(self):
         self.feature_branch()

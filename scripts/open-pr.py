@@ -213,6 +213,13 @@ def rebase_onto_main(valid_outcomes):
     )
 
 
+def abort_stale_rebase():
+    for name in ("rebase-merge", "rebase-apply"):
+        if os.path.exists(git("rev-parse", "--git-path", name)):
+            run(["git", "rebase", "--abort"], check=False)
+            return
+
+
 def main():
     step_id = os.environ["LC_STEP"]
     step = json.loads(run(["lc", "show", step_id]).stdout)
@@ -230,6 +237,7 @@ def main():
         None,
     )
 
+    abort_stale_rebase()
     branch = git("branch", "--show-current")
     if not branch:
         raise Fail("the worktree is not on a branch")
@@ -242,6 +250,8 @@ def main():
         git("push", "--force-with-lease", "-u", "origin", branch)
         resync_existing(existing, owner, repo, item, quote, stage)
         url, num = existing["html_url"], existing["number"]
+        if recorded != url:
+            run(["lc", "attach", item, "pr", url])
     else:
         if recorded:
             raise Fail(
