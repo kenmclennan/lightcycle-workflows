@@ -231,7 +231,7 @@ def main():
     recorded = next(
         (
             r.get("pr")
-            for r in step.get("runs", [])
+            for r in reversed(step.get("runs", []))
             if r.get("pass") == step.get("pass") and r.get("phase") == step.get("phase")
         ),
         None,
