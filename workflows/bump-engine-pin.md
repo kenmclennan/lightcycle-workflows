@@ -57,6 +57,7 @@ display:
 
 edges:
   audit-engine-pin  stale          open-pr
+  audit-engine-pin  clean
   open-pr           done           poll-ci           primary
   open-pr           conflicted     resolve-conflict
   poll-ci           succeeded      watch-ci
@@ -105,5 +106,6 @@ signals:
   resolve-conflict  resolve_attempts  escalate
 
 disposition:
+  clean      completed
   merged     completed
   abandoned  abandoned
