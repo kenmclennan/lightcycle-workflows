@@ -262,6 +262,31 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(result.stdout, "")
         self.assertIn("scratch.txt", result.stderr)
 
+    def test_untracked_file_refuses_to_open_a_pr(self):
+        self.feature_branch()
+        (self.work / "digest.md").write_text("late\n")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("digest.md", result.stderr)
+        self.assertIn("uncommitted changes", result.stderr)
+        self.assertEqual(self.gh_calls(), [])
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_uncommitted_edit_refuses_to_update_an_open_pr(self):
+        self.feature_branch()
+        self.assertEqual(self.run_script("open-pr.py").returncode, 0)
+        (self.work / "feature.txt").write_text("edited\n")
+        (self.stub / "gh-calls.jsonl").unlink()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("feature.txt", result.stderr)
+        self.assertEqual(self.gh_calls(), [])
+
 
 class CompletionRepliesTest(ScriptCase):
     def ack(self, cid, stamp, extra=""):

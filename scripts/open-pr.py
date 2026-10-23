@@ -78,6 +78,11 @@ def find_pr(owner, repo, branch):
     return pulls[0] if pulls else None
 
 
+def dirty_paths():
+    dirty = run(["git", "status", "--porcelain"]).stdout
+    return ", ".join(line[3:] for line in dirty.splitlines())
+
+
 def sync_to_remote(branch):
     remote = git("rev-parse", "--verify", "-q", f"origin/{branch}", check=False)
     if not remote:
@@ -87,9 +92,8 @@ def sync_to_remote(branch):
         return ""
     if any(line.startswith("+") for line in git("cherry", f"origin/{branch}", "HEAD").splitlines()):
         return ""
-    dirty = git("status", "--porcelain")
-    if dirty:
-        paths = ", ".join(line[3:] for line in dirty.splitlines())
+    paths = dirty_paths()
+    if paths:
         raise Fail(
             f"local {branch} is at {local}, origin/{branch} is at {remote}, "
             f"and the worktree has uncommitted changes in {paths}; commit or discard them, then re-run"
@@ -244,6 +248,11 @@ def main():
     owner, repo = owner_repo()
     git("fetch", "origin")
     notes = [sync_to_remote(branch)]
+    paths = dirty_paths()
+    if paths:
+        raise Fail(
+            f"the worktree has uncommitted changes in {paths}; commit or discard them, then re-run"
+        )
 
     existing = find_pr(owner, repo, branch)
     if existing:
