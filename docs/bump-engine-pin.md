@@ -2,7 +2,7 @@
 
 **One item, one id, one phase, one PR.** `audit-engine-pin` compares the repo's deployed engine pin against the engine repo's own `main`; where the pin, the threshold and the engine repo live is stated in the repo's `CLAUDE.md` `## Engine pin` section. At or below the configured threshold there is nothing to do and the item closes unattended, no PR opened. Above threshold it bumps the pin to the engine's current `main` sha and the rest of the flow is the same generic PR/CI machinery every other bundle here already has.
 
-**Use it when** the repo's staleness report, or the gate's own hard failure past threshold, tells you the engine pin is behind - file it with `lc new item "bump engine pin (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`.
+**Use it when** the repo's staleness report, or the gate's own hard failure past threshold, tells you the engine pin is behind - file it with `lc new item "bump engine pin (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`, or enable the bundle's suggested daily schedule (`0 8 * * *`, guard `scripts/pin-stale.py`), which files it once when the pin is past threshold and no earlier item is open. Set `repo: owner/name` on the `schedule-<id>` block so the guard knows which repo's `CLAUDE.md` to read.
 
 **Phases:** `bump` (this repo) only - no spec phase; the check and the fix are the same deterministic, non-creative act.
 

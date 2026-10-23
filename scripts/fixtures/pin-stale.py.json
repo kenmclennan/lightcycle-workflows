@@ -1,0 +1,12 @@
+{
+  "pass": {
+    "outcome": "pass",
+    "title": "bump the engine pin (78 commits behind)",
+    "description": "The engine pin c0375cc000000000000000000000000000000000 in kenmclennan/lightcycle-workflows is 78 commits behind kenmclennan/lightcycle main (8c83f3ec80ab7aef3522ef559c47ec28316ceabf); the staleness threshold is 40.",
+    "state": "{\"main\": \"8c83f3ec80ab7aef3522ef559c47ec28316ceabf\", \"pin\": \"c0375cc000000000000000000000000000000000\"}"
+  },
+  "fail": {
+    "outcome": "fail",
+    "note": "pin is 12 commits behind, within threshold 40"
+  }
+}
