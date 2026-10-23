@@ -1,6 +1,9 @@
 ---
 summary: checks the repo's engine pin against the engine's main and bumps it via a PR when stale
-when-to-use: the repo's staleness report or a failing gate names its engine pin as behind the engine's main
+when-to-use: the repo's staleness report or a failing gate names its engine pin as behind the engine's main, or an operator enables its suggested daily schedule
+schedule:
+  cron: 0 8 * * *
+  guard: script:scripts/pin-stale.py
 ---
 
 # Bump-engine-pin
@@ -15,11 +18,15 @@ its own gate run (the very CI workflow this item edits), human reviews and merge
 the item. `audit-engine-pin` is the only stage that carries
 this pipeline's own subject matter; everything after it is unmodified reuse.
 
-Filing this workflow is a human act, not something CI can do itself - a CI runner has no path to
-the local `lc` store. The repo's scheduled CI run and the gate's own hard failure past threshold are
-what prompt a human to run
-`lc new item "bump the engine pin (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`;
-everything downstream of that is mechanical.
+Filing this workflow is a human act unless an operator enables its suggested schedule. The
+`schedule:` block is a suggestion: the bundle never enables it. Once enabled, the daily guard
+`scripts/pin-stale.py` reads the pin and threshold from the repo's `CLAUDE.md` `## Engine pin`
+section (through the `repo` parameter the operator sets on the schedule block, `owner/name`),
+compares the pin to the engine's `main`, and files
+`bump the engine pin (<n> commits behind)` on the schedule's project only when the pin is past
+threshold and no item it filed earlier is still open. Without the schedule, a human files it with
+`lc new item "bump the engine pin (<n> commits behind)" --workflow lightcycle/bump-engine-pin --repo <this repo>`
+after the repo's scheduled CI run or the gate's hard failure; everything downstream is mechanical.
 
 entry: audit-engine-pin
 
