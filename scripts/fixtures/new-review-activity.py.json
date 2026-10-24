@@ -1,0 +1,12 @@
+{
+  "pass": {
+    "outcome": "pass",
+    "title": "Review yield - 2026-10-26",
+    "description": "since: 2026-10-19\nalready-counted: LC-12.3\nprevious: LC-1290\nfloor: 0.5\nrepeat-min: 3",
+    "state": "{\"boundary\": [\"LC-14.6\"], \"through\": \"2026-10-26\"}"
+  },
+  "fail": {
+    "outcome": "fail",
+    "note": "no new review verdicts or escapes since 2026-10-19"
+  }
+}
