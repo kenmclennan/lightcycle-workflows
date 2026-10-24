@@ -15,6 +15,9 @@ Your job is to surface concrete THINGS TO IMPROVE, not to find trends. A trend m
 
 1. CLAIM: `lc claim agent`. If nothing, say "no work" and EXIT. Take `.id` as STEP and `.item` as ITEM. There is no single project - the batch is global.
 2. Gather the batch: read the item description (`lc show ITEM`). Its `batch:` line lists the closed items and passes you are reviewing - that is BATCH. Do not run the batch: the pending list never shrinks for a scheduled audit, so reading it would re-audit the same items. For each id in BATCH, run `lc retro <id>` to read its feedback, and `lc show <id>` for its title; the standard below requires every reference to carry one.
+
+   **Slow steps.** `lc retro <id>` also lists each slow step of that item, with its step id, stage, active time, threshold, kind (`waiting`, `working` or `unknown`) and worker log path. For every slow step listed for an item in BATCH, read the log at that path and name the cause in one line: for example waiting on CI or GitHub, a hung or repeated command, a wrong approach later reversed, a brief that was too big, or machine load. Take each cause through the bar in step 3 unchanged: a cause that is a process or setup defect, non-obvious, actionable and not already captured becomes a finding, quoting the log evidence; any other cause is a one-line note in the digest. A `waiting` step whose wait was outside the worker's control (CI, review) is not a finding on its own. When no item in BATCH lists a slow step, say so plainly in the digest.
+
 3. Apply the bar. Escalate only when ALL FOUR hold:
 
    - (a) The finding is a defect in the **process or setup** (spec quality, tooling, step sequencing, role clarity) - NOT a quality issue with the delivered work.

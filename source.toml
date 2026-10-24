@@ -1,4 +1,4 @@
 name = "lightcycle"
 contract = 1
-requires-engine = ">=0.7.27"
+requires-engine = ">=0.7.101"
 description = "Built-in lightcycle workflows: the spec-authoring and code-build pipelines."
