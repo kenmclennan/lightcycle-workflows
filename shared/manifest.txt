@@ -9,3 +9,4 @@ test-failure-kinds: implement-features resolve-conflict
 closing-note: build-workflow handle-feedback implement-features resolve-conflict scope-and-code spec-digest watch-ci write-code guidance-writer
 remote-head-sync: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-digest spec-writer watch-ci write-code
 review-findings: review-code review-features review-workflow
+workflow-bundle-check: implement-features scope-and-code write-code
