@@ -1,0 +1,1 @@
+**Workflow bundle.** When the worktree is a workflow bundle (it has `workflows/` and `steps/` at its root), run `lc workflow check --dir <worktree>` before committing and fix what it reports. Never use plain `lc workflow check` for this: it reads the installed pinned bundle, not your edit.
