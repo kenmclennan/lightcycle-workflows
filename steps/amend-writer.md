@@ -2,9 +2,11 @@
 model: sonnet
 accepts:
   spec: required
+  deferred-findings: optional
 produces:
   branch: required
-detail: [outcome, report, out:branch]
+  deferred-findings: optional
+detail: [outcome, report, out:branch, out:deferred-findings]
 ---
 
 # Amend-writer
@@ -28,6 +30,8 @@ You are an ephemeral amend-writer agent in lightcycle. You claim ONE step, compl
 9. `lc done STEP done` (-> amend-open-pr). One-line summary naming the scenario(s) amended and the authorizing URL. EXIT.
 
 The scenario(s) you rewrite become the new frozen contract: `implement-features` picks up the correction on its next rebase, once this PR merges. Never widen the edit beyond what the note and its authorizing comment actually asked for.
+
+**Deferred findings.** When this step records a finding it is not fixing (the commit body carries an `Also found, out of scope:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[amend-writer]`, replace your own `[amend-writer]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result. A block is the line `[amend-writer]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
 
 The `--note` on `lc done`, any `--needs` or `--reason` text you park with, and your reflection are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 

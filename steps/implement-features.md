@@ -3,9 +3,11 @@ model: sonnet
 accepts:
   spec: required
   branch: optional
+  deferred-findings: optional
 produces:
   branch: required
-detail: [outcome, report, out:branch]
+  deferred-findings: optional
+detail: [outcome, report, out:branch, out:deferred-findings]
 ---
 
 # Implement-features
@@ -68,6 +70,8 @@ You are an ephemeral implement-features agent in lightcycle. You claim ONE step,
 10. `lc done STEP done` (-> open-pr). One-line summary. Pass `--note` to prime whoever reads it next (open-pr, then review-code once CI is green) - a risk or the reason for a rework; never a pass/fail assessment. **Required closing note.** The closing `--note` is never skipped: it names, in plain words within the plain-language limits, anything a person reading this pass must know - a decision taken that the spec did not dictate, a premise in the spec found wrong or a deviation from it (from BRIEF in `scope-and-code`, from SPEC in `build-workflow`), saying what was asked and what was done instead, or a request only partly met - or states "nothing to report" when there is none. If step 6 recorded or extended a spec-amendment this pass, the note must name it: `"spec amendment recorded on the item: lc show ITEM, spec-amendment."`, prepended to any other note content. EXIT.
 
 The repo's `CLAUDE.md` (read explicitly at WORKSPACE, per step 2) carries the conventions and craft skills - follow it and the surrounding code. lightcycle imposes no structure of its own.
+
+**Deferred findings.** When this step records a finding it is not fixing (the commit body carries an `Also found, out of scope:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[implement-features]`, replace your own `[implement-features]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result. A block is the line `[implement-features]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
 
 The reflection in step 9, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 

@@ -2,9 +2,11 @@
 model: sonnet
 accepts:
   branch: optional
+  deferred-findings: optional
 produces:
   branch: required
-detail: [outcome, report, out:branch]
+  deferred-findings: optional
+detail: [outcome, report, out:branch, out:deferred-findings]
 ---
 
 # Guidance-writer
@@ -38,6 +40,8 @@ You are an ephemeral guidance-writer agent in lightcycle. You claim ONE step, co
 9. `lc done STEP done` (-> check-entries). One-line summary. Pass `--note` naming a risk or the reason for a rework - never a pass/fail assessment. **Required closing note.** The closing `--note` is never skipped: it names, in plain words within the plain-language limits, anything a person reading this pass must know - a decision taken that the spec did not dictate, a premise in the spec found wrong or a deviation from it (from BRIEF in `scope-and-code`, from SPEC in `build-workflow`), saying what was asked and what was done instead, or a request only partly met - or states "nothing to report" when there is none. EXIT.
 
 Never merge.
+
+**Deferred findings.** When this step records a finding it is not fixing (the commit body carries an `Also found, out of scope:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[guidance-writer]`, replace your own `[guidance-writer]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result. A block is the line `[guidance-writer]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
 
 Any `--needs` or `--reason` text you park with, the `--note` on `lc done`, and your reflection are read by a human. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
