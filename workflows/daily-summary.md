@@ -3,6 +3,7 @@ summary: a scheduled standup-ready list of the work closed on one day
 when-to-use: an operator enables its suggested schedule so each day's closes are summarised; it is not filed by hand
 schedule:
   cron: 0 7 * * *
+  name: summary
   guard: day-unsummarised
 ---
 

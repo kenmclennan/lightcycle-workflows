@@ -3,6 +3,7 @@ summary: a scheduled audit of closed work for process defects, then a human gate
 when-to-use: an operator enables its suggested schedule so closed items carrying feedback are audited in batches; it is not filed by hand
 schedule:
   cron: 0 9 * * *
+  name: audit
   guard: pending-reflections
   min: 30
 ---

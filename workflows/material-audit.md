@@ -3,6 +3,7 @@ summary: a scheduled audit of the guidance and workflow material agents are told
 when-to-use: an operator enables its suggested schedule so the material is judged whenever it has changed; it is not filed by hand
 schedule:
   cron: 0 9 * * 1
+  name: audit
   guard: materials-changed
 ---
 

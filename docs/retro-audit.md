@@ -4,7 +4,7 @@
 
 A scheduled audit of a batch of closed items that carry feedback. It surfaces concrete things to improve in the process or setup, never trends manufactured across unrelated work, and files nothing. It also judges each writer's closing note against the plain-language rule, reading the note from the step that follows the writer.
 
-**Suggested schedule:** `cron: 0 9 * * *`, `guard: pending-reflections` with `min: 30`.
+**Suggested schedule:** `cron: 0 9 * * *`, `name: audit`, `guard: pending-reflections` with `min: 30`.
 
 The graph is `workflows/retro-audit.md`; the step prompts are in `steps/*.md`.
 

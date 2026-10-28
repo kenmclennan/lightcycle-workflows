@@ -4,7 +4,7 @@
 
 A scheduled audit of the guidance entries and workflow bundles agents are told to follow. It runs only when the material changed since the last firing, files nothing, and edits nothing.
 
-**Suggested schedule:** `cron: 0 9 * * 1`, `guard: materials-changed`.
+**Suggested schedule:** `cron: 0 9 * * 1`, `name: audit`, `guard: materials-changed`.
 
 The graph is `workflows/material-audit.md`; the step prompts are in `steps/*.md`.
 
