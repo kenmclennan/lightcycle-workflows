@@ -3,6 +3,7 @@ summary: a scheduled judgement of whether agent review is earning its cost, then
 when-to-use: an operator enables its suggested weekly schedule so review verdicts and escapes are analysed whenever new ones have arrived; it is not filed by hand
 schedule:
   cron: 0 9 * * 1
+  name: audit
   guard: script:scripts/new-review-activity.py
   catch-rate-floor: 0.5
   repeat-min: 3

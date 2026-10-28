@@ -4,7 +4,7 @@
 
 A scheduled plain-text list of the work closed on one day, in up to three sections (`Delivered`, `Fixed`, `Improved`), written so it can be read out at a standup. 07:00 is deliberate: the guard checks today first, which is empty then, so it reaches yesterday and the summary covers the whole previous day.
 
-**Suggested schedule:** `cron: 0 7 * * *`, `guard: day-unsummarised`.
+**Suggested schedule:** `cron: 0 7 * * *`, `name: summary`, `guard: day-unsummarised`.
 
 The graph is `workflows/daily-summary.md`; the step prompts are in `steps/*.md`.
 
