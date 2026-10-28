@@ -2,10 +2,11 @@
 sends-back: changes
 accepts:
   digest: optional
+  deferred-findings: optional
 produces:
   pr: required
 presents: pr
-detail: [pr, report, in:digest]
+detail: [pr, report, in:digest, in:deferred-findings]
 ---
 
 # Await-merge (you + driver)
@@ -16,6 +17,7 @@ A PR is green and comments resolved - ready to merge. When the base requires up-
 2. Confirm CI is green and review comments are resolved; summarise the PR for the human.
    - **A `Companion item still needed:` line in `review-code`'s last comment means this item is not the whole job, even once this PR merges - say so plainly in the summary.** `review-code`'s `coupled-change-surfaced` check (`steps/review-code.md` step 3) posts this line on every pass when the spec carries a `## Coupled change` section - a change BRIEF described in a different repo that no phase of this item's own workflow builds, tracks, or gates. It is easy to read a green, comment-resolved PR as "done" and merge past it: name the outstanding repo and what it needs directly in the summary to the human, rather than letting a complete-looking PR speak for the whole item. Applies wherever the review step immediately preceding this gate posts such a line - `review-code`'s `coupled-change-surfaced` check (`code-await-merge` in `spec-driven`/`bdd-driven`) or `review-workflow`'s equivalent (`code-await-merge` in `workflow-authoring`) - other paths reaching this gate have no such comment to check.
    - **If the item has a `digest` artifact, read it and lead the summary with it.** The digest is the human's way in to a spec; the spec is the reference. No `digest` artifact means nothing to add here.
+   - **If the Detail tab shows `in:deferred-findings`, file each finding as a standalone item before anything merges, and name them in the summary to the human.** The text is blocks headed `[<stage>]`, one dash-led entry per defect an agent found and chose not to fix; workers cannot file items, so this is the only place they surface. File each entry that is not already filed (the same text shows again at a later gate of the same item, so an entry you filed at an earlier gate is skipped), quoting the entry in the new item's description. If an entry should not be filed, say which and why in the summary. No `deferred-findings` means nothing to file here.
    - **Run every `Checked after merge:` bullet in the spec before anything merges.** If `lc show ITEM` lists a `spec` artifact, read it for Acceptance bullets that begin with the literal `Checked after merge:` (`spec-writer` marks the ones that need live data a build worker cannot read). Run each bullet's command, compare the result with its pass condition, and state each outcome in the summary to the human. A failed check is a reason not to merge: ask for changes on the PR as in step 5, naming the bullet and what the command returned. No `spec` artifact, or no such bullet, means nothing to run here.
 3. The human merges it on GitHub - their call, their click. Under the autopilot grant above, the driver merges it directly, having already confirmed in step 2 that it is green and comments are resolved.
 4. The pool's PR monitor closes the item automatically once GitHub shows the merge; run `lc done STEP <outcome>` yourself only if it has not caught up yet, where `<outcome>` is this gate's merge outcome: the one on the dashed `pr_merge: <outcome>` edge out of this stage in `lc workflow describe <workflow>` (`merged`, `spec-merged`, `features-merged`, `scenario-merged` or `no-change-merged`), which must also appear in `.valid_outcomes`. Never type `merged` by habit; most gates in a spec-first workflow do not have it.

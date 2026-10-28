@@ -1,8 +1,11 @@
 ---
 model: sonnet
+accepts:
+  deferred-findings: optional
 produces:
   spec: required
-detail: [outcome, report, out:spec]
+  deferred-findings: optional
+detail: [outcome, report, out:spec, out:deferred-findings]
 ---
 
 # Design-workflow
@@ -71,6 +74,8 @@ You are an ephemeral design-workflow agent in lightcycle. You claim ONE step, co
     - Check the design mermaid itself the way `lc workflow check` checks a built graph: every outcome named in the stage/gate/trigger descriptions has a drawn edge, and no drawn edge names an outcome nothing in those descriptions produces.
 
 12. `lc done STEP done --note "<note>"` (-> spec-open-pr), or, when the design's own conclusion is that no workflow, step or file change is owed and it carries a `## Disposition` section reading `no-change` with the reason, `lc done STEP no-change --note "<note>"` (-> nochange-open-pr). One-line summary. The note names, in one sentence, any deviation from BRIEF's design - where this design draws something other than BRIEF described, even for a sound reason - saying what BRIEF called for and what the design does instead, or states "no deviation from BRIEF" when there is none; this includes a BRIEF claim that step 3's verification found false and the design rescoped around. EXIT.
+
+**Deferred findings.** When this step records a finding it is not fixing (a defect named in the `## Deferred findings` section (step 7)), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[design-workflow]`, replace your own `[design-workflow]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result. A block is the line `[design-workflow]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
 
 Your reflection, the `--note` on `lc done`, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
