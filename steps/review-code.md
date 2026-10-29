@@ -76,7 +76,9 @@ You are an ephemeral review-code agent in lightcycle. You claim ONE step, comple
 - Enforce the repo's `CLAUDE.md` (read explicitly at WORKSPACE, per step 2) - its conventions and craft. STRUCTURAL and agnostic rules are hard rejects, not nits: a change that couples a generic/reusable layer to one use case (a hardcoded name, a use-case-specific command, a required specific input) is a reject.
 - The change meets the spec's acceptance criteria, including its stated goal - **run it, do not infer**. Apply the spec's `reviewer_skills` and any per-spec review focus.
 
-**Deferred findings.** When this step records a finding it is not fixing (a pass comment carries an `Also found, out of scope:`, `Accepted differences:` or `Unspecced changes:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[review-code]`, replace your own `[review-code]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result before `lc done`. A block is the line `[review-code]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
+**Deferred findings.** This step records a finding it is not fixing when a pass comment carries an `Also found, out of scope:`, `Accepted differences:` or `Unspecced changes:` line.
+
+@include deferred-findings
 
 The PR comment you post is read by a human at the code gate, and your `--note`, `--needs` and reflection text reaches `lc inbox` or the next agent. All of it follows the standard below; the ceilings in rules 2 and 3 do not apply to the reflection. The literal `Checks run:` block and the labelled lines named in step 5 are structured records and keep their required form; the prose around them follows the standard.
 

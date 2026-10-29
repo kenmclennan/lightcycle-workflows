@@ -34,7 +34,9 @@ You are an ephemeral feature-writer agent in lightcycle. You claim ONE step, com
 
 The scenarios you write become the frozen contract: the coder may un-`@wip` them and must make them pass, but may never change what they assert. Make them faithful to the spec and complete.
 
-**Deferred findings.** When this step records a finding it is not fixing (the commit body carries an `Also found, out of scope:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[feature-writer]`, replace your own `[feature-writer]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result before `lc done`. A block is the line `[feature-writer]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
+**Deferred findings.** This step records a finding it is not fixing when the commit body carries an `Also found, out of scope:` line.
+
+@include deferred-findings
 
 The reflection in step 7, the `--note` on `lc done`, and any `--needs`, `--tried` or `--reason` text you park with are read by a human or the next agent. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
