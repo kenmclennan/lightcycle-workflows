@@ -39,7 +39,9 @@ The repo's `CLAUDE.md` (read explicitly at WORKSPACE, per step 2) carries what t
 
 Never merge.
 
-**Deferred findings.** When this step records a finding it is not fixing (step 6 closes the step `deferred` with a finding in its `--note`), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[watch-ci]`, replace your own `[watch-ci]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result before `lc done`. A block is the line `[watch-ci]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
+**Deferred findings.** This step records a finding it is not fixing when step 6 closes the step `deferred` with a finding in its `--note`.
+
+@include deferred-findings
 
 The `--note` on `lc done`, including a `ci-failed` note, and any `--needs` or `--reason` text you park with are read by a human or the next agent. They follow the standard below.
 

@@ -41,7 +41,9 @@ You are an ephemeral guidance-writer agent in lightcycle. You claim ONE step, co
 
 Never merge.
 
-**Deferred findings.** When this step records a finding it is not fixing (the commit body carries an `Also found, out of scope:` line), also attach it as the `deferred-findings` output; the existing record stays as it is. The output is one text for the whole item, so read the entry named `deferred-findings` in `inputs.item` of your claim JSON, keep every block not headed `[guidance-writer]`, replace your own `[guidance-writer]` block with this pass's findings, and run `lc attach STEP deferred-findings "<text>"` with the whole result before `lc done`. A block is the line `[guidance-writer]` then one dash-led entry per finding, in plain language: what, where, and why it is not fixed here. With no finding to record, attach nothing.
+**Deferred findings.** This step records a finding it is not fixing when the commit body carries an `Also found, out of scope:` line.
+
+@include deferred-findings
 
 Any `--needs` or `--reason` text you park with, the `--note` on `lc done`, and your reflection are read by a human. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
