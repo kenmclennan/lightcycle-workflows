@@ -37,8 +37,8 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `audit-engine-pin` | agent | Reads the pin and the staleness threshold off `origin/main` as the repo's `## Engine pin` section directs, computes how many commits behind the engine's `main` it is. At or below threshold, closes the item itself (`clean`) - no PR. Above threshold, bumps the pin to the engine's current `main` sha and commits. |
-| `open-pr` | script | Rebases on main, pushes, opens the PR. |
+| `audit-engine-pin` | agent | Reads the pin and the staleness threshold off the base branch as the repo's `## Engine pin` section directs, computes how many commits behind the engine's `main` it is. At or below threshold, closes the item itself (`clean`) - no PR. Above threshold, bumps the pin to the engine's current `main` sha and commits. |
+| `open-pr` | script | Rebases on the base branch, pushes, opens the PR. |
 | `watch-ci` | agent | Watches the `simulate` CI job - the bump PR validates itself against the new pin end to end; routes failing CI and correct review comments back to `audit-engine-pin` (each capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |

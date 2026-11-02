@@ -131,9 +131,13 @@ class OpenPrTest(ScriptCase):
         self.assertIn("clash.txt", result.stderr)
 
     def test_rebase_failure_without_conflicts_fails_with_its_output(self):
-        self.feature_branch()
-        sh("git", "branch", "-m", "main", "trunk", cwd=self.origin)
-        sh("git", "update-ref", "-d", "refs/remotes/origin/main", cwd=self.work)
+        self.commit("later.txt", "later\n", "chore: main moves")
+        sh("git", "push", "origin", "main", cwd=self.work)
+        sh("git", "checkout", "-b", "feat/x", "HEAD~1", cwd=self.work)
+        self.commit("feature.txt", "one\n", "feat(x): add the thing")
+        hook = self.work / ".git" / "hooks" / "pre-rebase"
+        hook.write_text("#!/bin/sh\necho refused by test >&2\nexit 1\n")
+        hook.chmod(0o755)
 
         result = self.run_script("open-pr.py")
 
@@ -141,6 +145,19 @@ class OpenPrTest(ScriptCase):
         self.assertNotIn("conflicted", result.stdout)
         self.assertIn("no conflicted paths", result.stderr)
         self.assertIn("origin/main", result.stderr)
+        self.assertIn("refused by test", result.stderr)
+
+    def test_origin_default_moved_after_clone_is_followed(self):
+        self.feature_branch()
+        sh("git", "branch", "-m", "main", "trunk", cwd=self.origin)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertEqual(creates[0]["fields"]["base"], "trunk")
+        head = sh("git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=self.work).stdout.strip()
+        self.assertEqual(head, "origin/trunk")
 
     def test_existing_pr_not_recorded_on_the_run_is_attached(self):
         self.feature_branch()
@@ -298,6 +315,49 @@ class OpenPrTest(ScriptCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("feature.txt", result.stderr)
         self.assertEqual(self.gh_calls(), [])
+
+
+class OpenPrNonMainBaseTest(ScriptCase):
+    base_branch = "master"
+
+    def test_pr_base_and_rebase_use_the_default_branch(self):
+        self.commit("later.txt", "later\n", "chore: base moves")
+        sh("git", "push", "origin", "master", cwd=self.work)
+        sh("git", "checkout", "-b", "feat/x", "HEAD~1", cwd=self.work)
+        self.commit("feature.txt", "one\n", "feat(x): add the thing")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertEqual(creates[0]["fields"]["base"], "master")
+        base = sh("git", "merge-base", "origin/master", "HEAD", cwd=self.work).stdout.strip()
+        self.assertEqual(base, sh("git", "rev-parse", "origin/master", cwd=self.work).stdout.strip())
+
+    def test_rebase_conflict_names_the_default_branch(self):
+        self.lc_show["valid_outcomes"] = ["done"]
+        self.write_lc_show()
+        self.commit("clash.txt", "base side\n", "chore: base change")
+        sh("git", "push", "origin", "master", cwd=self.work)
+        sh("git", "checkout", "-b", "feat/x", "HEAD~1", cwd=self.work)
+        self.commit("clash.txt", "branch side\n", "feat(x): clash")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("origin/master", result.stderr)
+        self.assertIn("clash.txt", result.stderr)
+
+    def test_rebase_conflict_prints_conflicted_when_declared(self):
+        self.commit("clash.txt", "base side\n", "chore: base change")
+        sh("git", "push", "origin", "master", cwd=self.work)
+        sh("git", "checkout", "-b", "feat/x", "HEAD~1", cwd=self.work)
+        self.commit("clash.txt", "branch side\n", "feat(x): clash")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "conflicted")
 
 
 class CompletionRepliesTest(ScriptCase):

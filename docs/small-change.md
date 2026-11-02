@@ -38,7 +38,7 @@ flowchart TD
 | Step | Who | Does |
 | --- | --- | --- |
 | `scope-and-code` | agent | Reads the brief off the item's own description, decides whether it fits one PR with no design review, and writes the code. `too-big` routes to a human rather than building oversized work; on a rework it captures and reconciles a per-file test/step-def inventory so a rework round can't silently drop a test. |
-| `open-pr` | script | Rebases on main, pushes, opens the PR. |
+| `open-pr` | script | Rebases on the base branch, pushes, opens the PR. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `scope-and-code` (each capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
