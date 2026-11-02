@@ -210,6 +210,9 @@ def rebase_onto_main(valid_outcomes):
         return None
     paths = git("diff", "--name-only", "--diff-filter=U", check=False).split()
     run(["git", "rebase", "--abort"], check=False)
+    if not paths:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise Fail(f"git rebase origin/main failed with no conflicted paths: {detail}")
     if "conflicted" in valid_outcomes:
         return {"outcome": "conflicted", "note": f"rebase conflicts in {', '.join(paths)}"}
     raise Fail(
