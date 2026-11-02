@@ -130,6 +130,18 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(result.stdout, "")
         self.assertIn("clash.txt", result.stderr)
 
+    def test_rebase_failure_without_conflicts_fails_with_its_output(self):
+        self.feature_branch()
+        sh("git", "branch", "-m", "main", "trunk", cwd=self.origin)
+        sh("git", "update-ref", "-d", "refs/remotes/origin/main", cwd=self.work)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("conflicted", result.stdout)
+        self.assertIn("no conflicted paths", result.stderr)
+        self.assertIn("origin/main", result.stderr)
+
     def test_existing_pr_not_recorded_on_the_run_is_attached(self):
         self.feature_branch()
         state = self.read_gh_state()
