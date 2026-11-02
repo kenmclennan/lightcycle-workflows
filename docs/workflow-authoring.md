@@ -46,10 +46,10 @@ flowchart TD
 | `design-workflow` | agent | Draws the workflow-design spec (mermaid + step/gate/trigger descriptions) on a branch in the specs repo, carrying the design mermaid convention and grammar guardrails inline. |
 | `spec-open-pr` / `spec-await-merge` | script / human | Opens the spec PR; the human reviews the design and merges it (the review gate). |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `design-workflow` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
-| `build-workflow` | agent | Authors the bundle to match the approved design, carrying the full grammar, hook catalog, and self-contained-bundle rule inline. |
+| `build-workflow` | agent | Authors the bundle to match the approved design, carrying the full grammar, hook catalog, and self-contained-bundle rule inline. Creates or updates the workflow's doc page and README row whenever it adds a workflow or changes its stages, edges, gates or triggers, falling back to a stated `docs/<name>.md` convention when the origin names none. |
 | `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR. |
 | `watch-ci` | agent | Watches the `simulate` CI job; routes failing CI and correct review comments back to `build-workflow` (each capped, then `review-ci`). |
-| `review-workflow` | agent | Reads the `simulate` CI job's own run (already green, per `watch-ci`) to confirm `check`/`simulate` passed and diff its `describe --mermaid` output against the design mermaid; checks the agnostic-rule checklist; primes the human gate; bounces back on defects. |
+| `review-workflow` | agent | Reads the `simulate` CI job's own run (already green, per `watch-ci`) to confirm `check`/`simulate` passed and diff its `describe --mermaid` output against the design mermaid; checks the agnostic-rule checklist; rejects a PR whose added or changed workflow has no doc page or whose page no longer matches the built graph; primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | script, terminal | The item is merged and done. |
