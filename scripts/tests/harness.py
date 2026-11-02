@@ -95,6 +95,7 @@ def sh(*args, cwd=None, check=True):
 class ScriptCase(unittest.TestCase):
     item = "LC-1"
     step = "LC-1.4"
+    base_branch = "main"
 
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
@@ -105,14 +106,14 @@ class ScriptCase(unittest.TestCase):
         self.bin.mkdir()
         self.origin = self.root / "origin" / "repo.git"
         self.origin.parent.mkdir()
-        sh("git", "init", "--bare", "-b", "main", str(self.origin))
+        sh("git", "init", "--bare", "-b", self.base_branch, str(self.origin))
         self.work = self.root / "work"
         sh("git", "clone", str(self.origin), str(self.work))
         sh("git", "config", "user.name", "Tester", cwd=self.work)
         sh("git", "config", "user.email", "t@example.com", cwd=self.work)
-        sh("git", "checkout", "-b", "main", cwd=self.work, check=False)
+        sh("git", "checkout", "-b", self.base_branch, cwd=self.work, check=False)
         self.commit("README.md", "base\n", "chore: base")
-        sh("git", "push", "-u", "origin", "main", cwd=self.work)
+        sh("git", "push", "-u", "origin", self.base_branch, cwd=self.work)
         for name, body in (("gh", GH_STUB), ("lc", LC_STUB)):
             path = self.bin / name
             path.write_text(body)

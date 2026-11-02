@@ -10,7 +10,7 @@ schedule:
 # Bump-engine-pin
 
 One item, one id, one phase, one PR. `audit-engine-pin` reads the repo's currently-deployed engine
-pin and staleness threshold off `origin/main` - the repo's `CLAUDE.md` `## Engine pin` section says
+pin and staleness threshold off the base branch - the repo's `CLAUDE.md` `## Engine pin` section says
 where they live - and compares the pin to the engine repo's own `main` via the GitHub compare API.
 At or below the configured threshold there is nothing to do - it closes the item itself (`clean`)
 with no PR opened. Above threshold it bumps the pin to the engine's current `main` sha, commits, and

@@ -143,13 +143,27 @@ def resync_existing(pr, owner, repo, item, quote, stage):
         gh_write(path, fields, method="PATCH")
 
 
+def base_ref():
+    git("remote", "set-head", "origin", "--auto", check=False)
+    proc = run(["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"], check=False)
+    ref = proc.stdout.strip()
+    if proc.returncode != 0 or not ref:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise Fail(f"cannot resolve the default branch of origin: {detail}")
+    return ref
+
+
+def base_branch():
+    return base_ref().split("/", 1)[1]
+
+
 def create_pr(owner, repo, branch, item, quote, stage):
     title = git("log", "-1", "--format=%s")
     fields = {
         "title": title,
         "body": new_body(item, quote, stage),
         "head": branch,
-        "base": "main",
+        "base": base_branch(),
     }
     try:
         created = gh_write(f"repos/{owner}/{repo}/pulls", fields)
@@ -203,20 +217,21 @@ def close_rework_loop(owner, repo, num):
     return posted
 
 
-def rebase_onto_main(valid_outcomes):
+def rebase_onto_base(valid_outcomes):
     git("fetch", "origin")
-    proc = run(["git", "rebase", "origin/main"], check=False)
+    base = base_ref()
+    proc = run(["git", "rebase", base], check=False)
     if proc.returncode == 0:
         return None
     paths = git("diff", "--name-only", "--diff-filter=U", check=False).split()
     run(["git", "rebase", "--abort"], check=False)
     if not paths:
         detail = (proc.stderr or proc.stdout).strip()
-        raise Fail(f"git rebase origin/main failed with no conflicted paths: {detail}")
+        raise Fail(f"git rebase {base} failed with no conflicted paths: {detail}")
     if "conflicted" in valid_outcomes:
         return {"outcome": "conflicted", "note": f"rebase conflicts in {', '.join(paths)}"}
     raise Fail(
-        f"rebase onto origin/main conflicts in {', '.join(paths)}; this stage has no conflicted outcome"
+        f"rebase onto {base} conflicts in {', '.join(paths)}; this stage has no conflicted outcome"
     )
 
 
@@ -271,7 +286,7 @@ def main():
                 f"{branch} (the pulls lookup for {branch} found nothing); resolve the divergence "
                 "before opening or reusing a PR for this phase"
             )
-        conflict = rebase_onto_main(valid)
+        conflict = rebase_onto_base(valid)
         if conflict:
             return conflict
         git("push", "--force-with-lease", "-u", "origin", branch)
