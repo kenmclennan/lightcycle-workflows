@@ -22,7 +22,7 @@ Setup. Run `lc guidance-dir` for the path of the entry files. Run `lc guidance -
 
 Scope. Give one verdict per `stable` entry and cite the evidence you read: the exact command and what it returned. `draft` entries are not judged. `deprecated` entries get the reversal check below. Read each entry file for its `applies-to`, `covers` and body, since the report rows do not carry them.
 
-Criteria. Apply all six to every stable entry.
+Criteria. Apply all seven to every stable entry.
 
 1. Wrong? Check the entry's claims against the code, the tools and the steps it applies to. Run a command where a claim can be measured. Verdict: rewrite.
 2. Mis-scoped in itself? For example, `applies-to` names a facet no project declares, or steps where the rule cannot apply. Verdict: rescope, or retire if it has no audience.
@@ -33,10 +33,11 @@ Criteria. Apply all six to every stable entry.
    - (c) Not recently relevant: no opportunity in the window. Verdict: keep, no action, and say why so the next audit does not re-judge it from scratch.
 5. Checkable? The entry is mechanically decidable (it names a grep, a count, a file that must exist or a pattern that must not appear, and a tool could enforce it cheaply and without over-matching) and it is cited often, judged from the `lc guidance --json` citations in the window against the other entries. An entry that is rarely cited is handled by criterion 4, not here. Verdict: promote to a check. The check lands first; once it merges, the driver files a `guidance-entry` item that sets `status: deprecated`.
 6. Contradicts? It conflicts with another entry, a step or a repo's `CLAUDE.md`. Verdict: rewrite one side, naming both.
+7. Crowds out? Criterion 4 judges each entry alone and misses the interaction between entries: broad, rarely cited entries tagged to the same steps fill `guidance-budget-bytes` first and push cited entries out. Read the top-level `overflows` list from `lc guidance --json`; each names a project, a `<origin>/<stage>` step, the matched bytes, the budget and the skipped entry ids. `opportunity` minus `deliveries` in `lc guidance --json` is not a budget-skip count, since opportunity re-matches past spawns against today's entries and facets, so never read overflow from it. For each overflow, name the entries matched at that step that were delivered ahead of the skipped ones and have a low citation rate in `lc guidance --json`. Verdict: for each crowding entry, rescope it to the steps where its `when` decision is taken, consolidate it with an overlapping entry, or retire it. Never raise the budget. If `overflows` is empty or absent, this criterion yields no finding. The brief is a `guidance-entry` item.
 
 Reversal. Retiring means `status: deprecated`; restoring means `status: stable`, with the history in git. For each `deprecated` entry, find the date it was deprecated with `git log` on its file in the guidance dir, run `lc retro --since <that date>`, and run `lc search` on terms drawn from its subject. If the failure it prevented has recurred, the verdict is restore, and the finding says to restore that entry rather than draft a new one.
 
-Finding shape. Each finding states the entry id, the verdict, the criterion number, the evidence read, and the brief for a `guidance-entry` item: the entry, the change, and for a retirement `status: deprecated`. A promote verdict also adds a `Promotion candidate:` line naming the repo the check belongs in, the check and the entry it replaces. An entry whose verdict is keep is listed in the digest with the reason, never as a finding that needs a change.
+Finding shape. Each finding states the entry id, the verdict, the criterion number, the evidence read, and the brief for a `guidance-entry` item: the entry, the change, and for a retirement `status: deprecated`. A crowds-out finding is raised on the skipped entry named by the overflow and also names each crowding entry with its deliveries, citations and the change to it. A promote verdict also adds a `Promotion candidate:` line naming the repo the check belongs in, the check and the entry it replaces. An entry whose verdict is keep is listed in the digest with the reason, never as a finding that needs a change.
 
 These criteria are engine-owned and name no user repo's entries; read the guidance repo only through `lc guidance-dir`.
 
