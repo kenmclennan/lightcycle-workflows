@@ -65,6 +65,6 @@ flowchart TD
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass, building only the slice named for its run when the spec is sliced; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
 | `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge, with the same slice-aware `code-open-pr`, `review-code` and `code-await-merge` behaviour for a sliced run. |
 
-A sliced spec runs the `code` phase once per slice, as a stack of PRs, with `cleanup` after the last merge; the scenarios PR is unchanged. A `Delivery: one PR` spec runs the phase once.
+A sliced spec runs the `code` phase once per slice, as a stack of PRs, with `cleanup` after the last merge; the scenarios PR is unchanged. In a stack, `watch-ci`, `resolve-conflict` and `review-conflict` rebase onto the slice below, not the default branch. A `Delivery: one PR` spec runs the phase once.
 
 The slice size guide for the code phase comes from two optional workflow config keys, `slice-lines` and `slice-lines-limit`. The order is the target repo's `CLAUDE.md` guide first, then the operator's value in the config file's `workflow-lightcycle-bdd-driven:` block, then the bundle seed in `steps/spec-writer.md` (100 and 400). With no operator value set the seeds apply.
