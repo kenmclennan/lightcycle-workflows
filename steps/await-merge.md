@@ -2,11 +2,12 @@
 sends-back: changes
 accepts:
   digest: optional
+  brief: optional
   deferred-findings: optional
 produces:
   pr: required
 presents: pr
-detail: [pr, report, in:digest, in:deferred-findings]
+detail: [pr, report, in:digest, in:brief, in:deferred-findings]
 ---
 
 # Await-merge (you + driver)

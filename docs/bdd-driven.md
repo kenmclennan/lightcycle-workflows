@@ -55,7 +55,7 @@ flowchart TD
 | Step | Who | Does |
 | --- | --- | --- |
 | `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. The spec carries a `## Delivery` section (a `Delivery: one PR` or `Delivery: stack` brief line pins it); only the code phase is sliced. |
-| `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. A no-change spec gets the same digest on its way to the `no-change` gate. |
+| `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. It opens with relative links to the brief and the spec, and the brief is attached to the item so the gate shows it beside the spec and digest. A no-change spec gets the same digest on its way to the `no-change` gate. |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
 | `feature-open-pr` | script | Opens the feature PR. |
