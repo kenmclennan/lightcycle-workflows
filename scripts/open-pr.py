@@ -108,16 +108,25 @@ def quote_block(quote, stage):
     return f"\n\n## Closing note from {stage}\n\n{quote}"
 
 
-def managed_block(quote, stage):
+def stacked_line(stack):
+    if not stack:
+        return ""
+    line = f"Stacked on: {stack.get('parent_title')} ({stack.get('parent')})"
+    if stack.get("pr"):
+        line += f", PR {stack['pr']}"
+    return f"{line}\n\n"
+
+
+def managed_block(quote, stage, stack=None):
     message = git("log", "-1", "--format=%B").rstrip()
-    return f"\n{message}{quote_block(quote, stage)}\n"
+    return f"\n{stacked_line(stack)}{message}{quote_block(quote, stage)}\n"
 
 
-def new_body(item, quote, stage):
-    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage)}{BODY_CLOSE}"
+def new_body(item, quote, stage, stack=None):
+    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage, stack)}{BODY_CLOSE}"
 
 
-def resync_body(body, item, quote, stage):
+def resync_body(body, item, quote, stage, stack=None):
     start = body.find(BODY_OPEN)
     end = body.find(BODY_CLOSE)
     if start == -1 or end == -1 or end < start:
@@ -125,15 +134,15 @@ def resync_body(body, item, quote, stage):
     head = body[:start]
     if f"<!-- lc:item={item} -->" not in body:
         head += f"<!-- lc:item={item} -->\n"
-    return head + BODY_OPEN + managed_block(quote, stage) + body[end:]
+    return head + BODY_OPEN + managed_block(quote, stage, stack) + body[end:]
 
 
-def resync_existing(pr, owner, repo, item, quote, stage):
+def resync_existing(pr, owner, repo, item, quote, stage, stack=None):
     num = pr["number"]
     path = f"repos/{owner}/{repo}/pulls/{num}"
     current = gh_json(path)[0]
     fields = {}
-    updated = resync_body(current.get("body") or "", item, quote, stage)
+    updated = resync_body(current.get("body") or "", item, quote, stage, stack)
     if updated is not None and updated != (current.get("body") or ""):
         fields["body"] = updated
     title = git("log", "-1", "--format=%s")
@@ -157,13 +166,13 @@ def base_branch():
     return base_ref().split("/", 1)[1]
 
 
-def create_pr(owner, repo, branch, item, quote, stage):
+def create_pr(owner, repo, branch, item, quote, stage, stack=None):
     title = git("log", "-1", "--format=%s")
     fields = {
         "title": title,
-        "body": new_body(item, quote, stage),
+        "body": new_body(item, quote, stage, stack),
         "head": branch,
-        "base": base_branch(),
+        "base": stack["branch"] if stack else base_branch(),
     }
     try:
         created = gh_write(f"repos/{owner}/{repo}/pulls", fields)
@@ -217,9 +226,9 @@ def close_rework_loop(owner, repo, num):
     return posted
 
 
-def rebase_onto_base(valid_outcomes):
+def rebase_onto_base(valid_outcomes, stack=None):
     git("fetch", "origin")
-    base = base_ref()
+    base = f"origin/{stack['branch']}" if stack else base_ref()
     proc = run(["git", "rebase", base], check=False)
     if proc.returncode == 0:
         return None
@@ -250,6 +259,9 @@ def main():
     quote = previous.get("report") or ""
     stage = previous.get("stage") or ""
     valid = step.get("valid_outcomes") or []
+    stack = step.get("stack") or None
+    if stack and not stack.get("branch"):
+        stack = None
     recorded = next(
         (
             r.get("pr")
@@ -275,7 +287,7 @@ def main():
     existing = find_pr(owner, repo, branch)
     if existing:
         git("push", "--force-with-lease", "-u", "origin", branch)
-        resync_existing(existing, owner, repo, item, quote, stage)
+        resync_existing(existing, owner, repo, item, quote, stage, stack)
         url, num = existing["html_url"], existing["number"]
         if recorded != url:
             run(["lc", "attach", item, "pr", url])
@@ -286,11 +298,11 @@ def main():
                 f"{branch} (the pulls lookup for {branch} found nothing); resolve the divergence "
                 "before opening or reusing a PR for this phase"
             )
-        conflict = rebase_onto_base(valid)
+        conflict = rebase_onto_base(valid, stack)
         if conflict:
             return conflict
         git("push", "--force-with-lease", "-u", "origin", branch)
-        url = create_pr(owner, repo, branch, item, quote, stage)
+        url = create_pr(owner, repo, branch, item, quote, stage, stack)
         num = int(url.rstrip("/").rsplit("/", 1)[-1])
         run(["lc", "attach", item, "pr", url])
 
