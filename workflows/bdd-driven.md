@@ -28,6 +28,10 @@ entry: spec-writer
 requires: repo
 provides: spec
 
+config:
+  slice-lines: optional
+  slice-lines-limit: optional
+
 workspace:
   spec-writer               specs
   spec-digest               specs

@@ -56,3 +56,5 @@ flowchart TD
 | `cleanup` | script, terminal | The item is merged and done. |
 
 Every spec carries a `## Delivery` section saying whether it ships as one PR or a stack of small slices; a `Delivery: one PR` or `Delivery: stack` line in the brief pins the outcome.
+
+The slice size guide comes from two optional workflow config keys, `slice-lines` and `slice-lines-limit`. The order is the target repo's `CLAUDE.md` guide first, then the operator's value in the config file's `workflow-lightcycle-spec-driven:` block, then the bundle seed in `steps/spec-writer.md` (100 and 400). With no operator value set the seeds apply.
