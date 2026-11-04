@@ -54,3 +54,5 @@ flowchart TD
 | `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | script, terminal | The item is merged and done. |
+
+Every spec carries a `## Delivery` section saying whether it ships as one PR or a stack of small slices; a `Delivery: one PR` or `Delivery: stack` line in the brief pins the outcome.
