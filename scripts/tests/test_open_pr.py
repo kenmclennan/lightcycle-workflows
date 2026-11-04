@@ -159,6 +159,78 @@ class OpenPrTest(ScriptCase):
         head = sh("git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD", cwd=self.work).stdout.strip()
         self.assertEqual(head, "origin/trunk")
 
+    def stacked_branch(self, pr="https://github.com/o/r/pull/7"):
+        sh("git", "checkout", "-b", "feat/parent", cwd=self.work)
+        self.commit("parent.txt", "parent\n", "feat(p): parent work")
+        sh("git", "push", "-u", "origin", "feat/parent", cwd=self.work)
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("feature.txt", "one\n", "feat(x): add the thing\n\nbody line")
+        self.lc_show["stack"] = {
+            "parent": "LC-0",
+            "parent_title": "Parent work",
+            "branch": "feat/parent",
+            "pr": pr,
+        }
+        self.write_lc_show()
+
+    def test_stacked_step_opens_against_the_parent_branch_and_names_it(self):
+        self.stacked_branch()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertEqual(creates[0]["fields"]["base"], "feat/parent")
+        body = creates[0]["fields"]["body"]
+        self.assertIn("Stacked on: Parent work (LC-0), PR https://github.com/o/r/pull/7", body)
+        self.assertLess(body.index("<!-- lc:body -->"), body.index("Stacked on:"))
+        self.assertLess(body.index("Stacked on:"), body.index("body line"))
+        count = sh("git", "rev-list", "--count", "origin/feat/parent..HEAD", cwd=self.work).stdout.strip()
+        self.assertEqual(count, "1")
+
+    def test_stacked_step_with_no_parent_pr_omits_the_pr_clause(self):
+        self.stacked_branch(pr=None)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        body = creates[0]["fields"]["body"]
+        self.assertIn("Stacked on: Parent work (LC-0)\n", body)
+        self.assertNotIn("PR ", body.split("Stacked on:")[1].split("\n")[0])
+
+    def test_null_stack_behaves_as_unstacked(self):
+        self.feature_branch()
+        self.lc_show["stack"] = None
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertEqual(creates[0]["fields"]["base"], "main")
+        self.assertNotIn("Stacked on", creates[0]["fields"]["body"])
+
+    def test_existing_pr_with_a_different_base_is_not_retargeted(self):
+        self.stacked_branch()
+        state = self.read_gh_state()
+        state["pulls"].append({
+            "number": 1,
+            "html_url": "https://github.com/o/r/pull/1",
+            "title": "feat(x): add the thing",
+            "base": {"ref": "main"},
+            "body": "<!-- lc:body -->\nold\n<!-- /lc:body -->",
+        })
+        self.gh_state = state
+        self.write_gh_state()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        patches = [c for c in self.gh_calls() if c["method"] == "PATCH"]
+        self.assertFalse([p for p in patches if "base" in p["fields"]])
+        self.assertEqual(self.read_gh_state()["pulls"][0]["base"], {"ref": "main"})
+
     def test_existing_pr_not_recorded_on_the_run_is_attached(self):
         self.feature_branch()
         state = self.read_gh_state()
