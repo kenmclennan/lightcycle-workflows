@@ -211,6 +211,58 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(creates[0]["fields"]["base"], "main")
         self.assertNotIn("Stacked on", creates[0]["fields"]["body"])
 
+    def sliced_step(self, slice_no=2, name="wire-it", total=3):
+        self.lc_show["slice"] = slice_no
+        self.lc_show["slice_name"] = name
+        self.lc_show["slices"] = [{"name": f"s{i}"} for i in range(total)]
+        self.write_lc_show()
+
+    def test_sliced_step_names_its_slice_in_the_body(self):
+        self.feature_branch()
+        self.sliced_step()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        body = creates[0]["fields"]["body"]
+        self.assertIn("Slice: wire-it (2 of 3)\n", body)
+        self.assertLess(body.index("<!-- lc:body -->"), body.index("Slice:"))
+        self.assertLess(body.index("Slice:"), body.index("body line"))
+
+    def test_stacked_sliced_step_puts_the_slice_line_after_the_stacked_line(self):
+        self.stacked_branch()
+        self.sliced_step()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        body = creates[0]["fields"]["body"]
+        self.assertLess(body.index("Stacked on:"), body.index("Slice: wire-it (2 of 3)"))
+
+    def test_unsliced_step_omits_the_slice_line(self):
+        self.feature_branch()
+        self.lc_show["slice"] = 0
+        self.lc_show["slice_name"] = None
+        self.lc_show["slices"] = []
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertNotIn("Slice:", creates[0]["fields"]["body"])
+
+    def test_step_without_slice_fields_omits_the_slice_line(self):
+        self.feature_branch()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertNotIn("Slice:", creates[0]["fields"]["body"])
+
     def test_existing_pr_with_a_different_base_is_not_retargeted(self):
         self.stacked_branch()
         state = self.read_gh_state()

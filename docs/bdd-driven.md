@@ -31,7 +31,7 @@ flowchart TD
         FAM -->|changes| FW
     end
     FAM -->|features-merged| IF["implement-features"]
-    subgraph C ["code phase (project repo)"]
+    subgraph C ["code phase (project repo), once per slice"]
         IF --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| IF
         WCI -->|review-rework| IF
@@ -62,7 +62,9 @@ flowchart TD
 | `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failing CI and correct review comments back to `feature-writer` (each capped, then `feature-review-ci`). |
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
-| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
-| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge. |
+| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass, building only the slice named for its run when the spec is sliced; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge, with the same slice-aware `code-open-pr`, `review-code` and `code-await-merge` behaviour for a sliced run. |
+
+A sliced spec runs the `code` phase once per slice, as a stack of PRs, with `cleanup` after the last merge; the scenarios PR is unchanged. A `Delivery: one PR` spec runs the phase once.
 
 The slice size guide for the code phase comes from two optional workflow config keys, `slice-lines` and `slice-lines-limit`. The order is the target repo's `CLAUDE.md` guide first, then the operator's value in the config file's `workflow-lightcycle-bdd-driven:` block, then the bundle seed in `steps/spec-writer.md` (100 and 400). With no operator value set the seeds apply.

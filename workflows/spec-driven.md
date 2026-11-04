@@ -17,6 +17,7 @@ entry: spec-writer
 
 requires: repo
 provides: spec
+slices: code from slices
 
 config:
   slice-lines: optional

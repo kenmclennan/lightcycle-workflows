@@ -117,16 +117,42 @@ def stacked_line(stack):
     return f"{line}\n\n"
 
 
-def managed_block(quote, stage, stack=None):
+def slice_line(slice_info):
+    if not slice_info:
+        return ""
+    name, position, total = slice_info
+    return f"Slice: {name} ({position} of {total})\n\n"
+
+
+def slice_total(item):
+    slices = json.loads(run(["lc", "show", item]).stdout).get("slices")
+    if isinstance(slices, str):
+        try:
+            slices = json.loads(slices)
+        except ValueError:
+            return 0
+    return len(slices) if isinstance(slices, list) else 0
+
+
+def slice_details(step, item):
+    position = step.get("slice") or 0
+    name = step.get("slice_name")
+    if not position or not name:
+        return None
+    total = slice_total(item)
+    return (name, position, total) if total else None
+
+
+def managed_block(quote, stage, stack=None, slice_info=None):
     message = git("log", "-1", "--format=%B").rstrip()
-    return f"\n{stacked_line(stack)}{message}{quote_block(quote, stage)}\n"
+    return f"\n{stacked_line(stack)}{slice_line(slice_info)}{message}{quote_block(quote, stage)}\n"
 
 
-def new_body(item, quote, stage, stack=None):
-    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage, stack)}{BODY_CLOSE}"
+def new_body(item, quote, stage, stack=None, slice_info=None):
+    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage, stack, slice_info)}{BODY_CLOSE}"
 
 
-def resync_body(body, item, quote, stage, stack=None):
+def resync_body(body, item, quote, stage, stack=None, slice_info=None):
     start = body.find(BODY_OPEN)
     end = body.find(BODY_CLOSE)
     if start == -1 or end == -1 or end < start:
@@ -134,15 +160,15 @@ def resync_body(body, item, quote, stage, stack=None):
     head = body[:start]
     if f"<!-- lc:item={item} -->" not in body:
         head += f"<!-- lc:item={item} -->\n"
-    return head + BODY_OPEN + managed_block(quote, stage, stack) + body[end:]
+    return head + BODY_OPEN + managed_block(quote, stage, stack, slice_info) + body[end:]
 
 
-def resync_existing(pr, owner, repo, item, quote, stage, stack=None):
+def resync_existing(pr, owner, repo, item, quote, stage, stack=None, slice_info=None):
     num = pr["number"]
     path = f"repos/{owner}/{repo}/pulls/{num}"
     current = gh_json(path)[0]
     fields = {}
-    updated = resync_body(current.get("body") or "", item, quote, stage, stack)
+    updated = resync_body(current.get("body") or "", item, quote, stage, stack, slice_info)
     if updated is not None and updated != (current.get("body") or ""):
         fields["body"] = updated
     title = git("log", "-1", "--format=%s")
@@ -166,11 +192,11 @@ def base_branch():
     return base_ref().split("/", 1)[1]
 
 
-def create_pr(owner, repo, branch, item, quote, stage, stack=None):
+def create_pr(owner, repo, branch, item, quote, stage, stack=None, slice_info=None):
     title = git("log", "-1", "--format=%s")
     fields = {
         "title": title,
-        "body": new_body(item, quote, stage, stack),
+        "body": new_body(item, quote, stage, stack, slice_info),
         "head": branch,
         "base": stack["branch"] if stack else base_branch(),
     }
@@ -262,6 +288,7 @@ def main():
     stack = step.get("stack") or None
     if stack and not stack.get("branch"):
         stack = None
+    slice_info = slice_details(step, item)
     recorded = next(
         (
             r.get("pr")
@@ -287,7 +314,7 @@ def main():
     existing = find_pr(owner, repo, branch)
     if existing:
         git("push", "--force-with-lease", "-u", "origin", branch)
-        resync_existing(existing, owner, repo, item, quote, stage, stack)
+        resync_existing(existing, owner, repo, item, quote, stage, stack, slice_info)
         url, num = existing["html_url"], existing["number"]
         if recorded != url:
             run(["lc", "attach", item, "pr", url])
@@ -302,7 +329,7 @@ def main():
         if conflict:
             return conflict
         git("push", "--force-with-lease", "-u", "origin", branch)
-        url = create_pr(owner, repo, branch, item, quote, stage, stack)
+        url = create_pr(owner, repo, branch, item, quote, stage, stack, slice_info)
         num = int(url.rstrip("/").rsplit("/", 1)[-1])
         run(["lc", "attach", item, "pr", url])
 
