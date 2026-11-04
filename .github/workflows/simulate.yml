@@ -122,7 +122,7 @@ jobs:
             lc workflow check "ci-bundle/$name" || fail=1
             echo "== lc workflow simulate ci-bundle/$name =="
             slices_flag=""
-            if grep -q '^slices:' "$f"; then slices_flag="--slices 3"; fi
+            if grep -q '^slices:' "$f"; then slices_flag="--slices 3 --trace"; fi
             lc workflow simulate "ci-bundle/$name" $slices_flag || fail=1
             echo "== lc workflow describe ci-bundle/$name --mermaid =="
             lc workflow describe "ci-bundle/$name" --mermaid || fail=1
