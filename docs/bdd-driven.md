@@ -31,7 +31,7 @@ flowchart TD
         FAM -->|changes| FW
     end
     FAM -->|features-merged| IF["implement-features"]
-    subgraph C ["code phase (project repo), once per slice"]
+    subgraph C ["code phase (project repo)"]
         IF --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| IF
         WCI -->|review-rework| IF
@@ -54,7 +54,7 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. The spec carries a `## Delivery` section (a `Delivery: one PR` or `Delivery: stack` brief line pins it); only the code phase is sliced. |
+| `spec-writer` -> `spec-await-merge` | agent / human | Same as spec-driven: spec authored and merged on the spec PR. |
 | `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. It opens with relative links to the brief and the spec, and the brief is attached to the item so the gate shows it beside the spec and digest. A no-change spec gets the same digest on its way to the `no-change` gate. |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `feature-writer` | agent | Derives pure gherkin `.feature` scenarios from the merged spec, tagged `@wip` so CI skips them; no glue code. |
@@ -62,9 +62,5 @@ flowchart TD
 | `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failing CI and correct review comments back to `feature-writer` (each capped, then `feature-review-ci`). |
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
-| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass, building only the slice named for its run when the spec is sliced; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
-| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge, with the same slice-aware `code-open-pr`, `review-code` and `code-await-merge` behaviour for a sliced run. |
-
-A sliced spec runs the `code` phase once per slice, as a stack of PRs, with `cleanup` after the last merge; the scenarios PR is unchanged. In a stack, `watch-ci`, `resolve-conflict` and `review-conflict` rebase onto the slice below, not the default branch. A `Delivery: one PR` spec runs the phase once.
-
-The slice size guide for the code phase comes from two optional workflow config keys, `slice-lines` and `slice-lines-limit`. The order is the target repo's `CLAUDE.md` guide first, then the operator's value in the config file's `workflow-lightcycle-bdd-driven:` block, then the bundle seed in `steps/spec-writer.md` (100 and 400). With no operator value set the seeds apply.
+| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge. |

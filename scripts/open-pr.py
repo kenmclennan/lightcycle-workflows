@@ -108,51 +108,16 @@ def quote_block(quote, stage):
     return f"\n\n## Closing note from {stage}\n\n{quote}"
 
 
-def stacked_line(stack):
-    if not stack:
-        return ""
-    line = f"Stacked on: {stack.get('parent_title')} ({stack.get('parent')})"
-    if stack.get("pr"):
-        line += f", PR {stack['pr']}"
-    return f"{line}\n\n"
-
-
-def slice_line(slice_info):
-    if not slice_info:
-        return ""
-    name, position, total = slice_info
-    return f"Slice: {name} ({position} of {total})\n\n"
-
-
-def slice_total(item):
-    slices = json.loads(run(["lc", "show", item]).stdout).get("slices")
-    if isinstance(slices, str):
-        try:
-            slices = json.loads(slices)
-        except ValueError:
-            return 0
-    return len(slices) if isinstance(slices, list) else 0
-
-
-def slice_details(step, item):
-    position = step.get("slice") or 0
-    name = step.get("slice_name")
-    if not position or not name:
-        return None
-    total = slice_total(item)
-    return (name, position, total) if total else None
-
-
-def managed_block(quote, stage, stack=None, slice_info=None):
+def managed_block(quote, stage):
     message = git("log", "-1", "--format=%B").rstrip()
-    return f"\n{stacked_line(stack)}{slice_line(slice_info)}{message}{quote_block(quote, stage)}\n"
+    return f"\n{message}{quote_block(quote, stage)}\n"
 
 
-def new_body(item, quote, stage, stack=None, slice_info=None):
-    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage, stack, slice_info)}{BODY_CLOSE}"
+def new_body(item, quote, stage):
+    return f"<!-- lc:item={item} -->\n{BODY_OPEN}{managed_block(quote, stage)}{BODY_CLOSE}"
 
 
-def resync_body(body, item, quote, stage, stack=None, slice_info=None):
+def resync_body(body, item, quote, stage):
     start = body.find(BODY_OPEN)
     end = body.find(BODY_CLOSE)
     if start == -1 or end == -1 or end < start:
@@ -160,15 +125,15 @@ def resync_body(body, item, quote, stage, stack=None, slice_info=None):
     head = body[:start]
     if f"<!-- lc:item={item} -->" not in body:
         head += f"<!-- lc:item={item} -->\n"
-    return head + BODY_OPEN + managed_block(quote, stage, stack, slice_info) + body[end:]
+    return head + BODY_OPEN + managed_block(quote, stage) + body[end:]
 
 
-def resync_existing(pr, owner, repo, item, quote, stage, stack=None, slice_info=None):
+def resync_existing(pr, owner, repo, item, quote, stage):
     num = pr["number"]
     path = f"repos/{owner}/{repo}/pulls/{num}"
     current = gh_json(path)[0]
     fields = {}
-    updated = resync_body(current.get("body") or "", item, quote, stage, stack, slice_info)
+    updated = resync_body(current.get("body") or "", item, quote, stage)
     if updated is not None and updated != (current.get("body") or ""):
         fields["body"] = updated
     title = git("log", "-1", "--format=%s")
@@ -192,13 +157,13 @@ def base_branch():
     return base_ref().split("/", 1)[1]
 
 
-def create_pr(owner, repo, branch, item, quote, stage, stack=None, slice_info=None):
+def create_pr(owner, repo, branch, item, quote, stage):
     title = git("log", "-1", "--format=%s")
     fields = {
         "title": title,
-        "body": new_body(item, quote, stage, stack, slice_info),
+        "body": new_body(item, quote, stage),
         "head": branch,
-        "base": stack["branch"] if stack else base_branch(),
+        "base": base_branch(),
     }
     try:
         created = gh_write(f"repos/{owner}/{repo}/pulls", fields)
@@ -252,9 +217,9 @@ def close_rework_loop(owner, repo, num):
     return posted
 
 
-def rebase_onto_base(valid_outcomes, stack=None):
+def rebase_onto_base(valid_outcomes):
     git("fetch", "origin")
-    base = f"origin/{stack['branch']}" if stack else base_ref()
+    base = base_ref()
     proc = run(["git", "rebase", base], check=False)
     if proc.returncode == 0:
         return None
@@ -285,10 +250,6 @@ def main():
     quote = previous.get("report") or ""
     stage = previous.get("stage") or ""
     valid = step.get("valid_outcomes") or []
-    stack = step.get("stack") or None
-    if stack and not stack.get("branch"):
-        stack = None
-    slice_info = slice_details(step, item)
     recorded = next(
         (
             r.get("pr")
@@ -314,7 +275,7 @@ def main():
     existing = find_pr(owner, repo, branch)
     if existing:
         git("push", "--force-with-lease", "-u", "origin", branch)
-        resync_existing(existing, owner, repo, item, quote, stage, stack, slice_info)
+        resync_existing(existing, owner, repo, item, quote, stage)
         url, num = existing["html_url"], existing["number"]
         if recorded != url:
             run(["lc", "attach", item, "pr", url])
@@ -325,11 +286,11 @@ def main():
                 f"{branch} (the pulls lookup for {branch} found nothing); resolve the divergence "
                 "before opening or reusing a PR for this phase"
             )
-        conflict = rebase_onto_base(valid, stack)
+        conflict = rebase_onto_base(valid)
         if conflict:
             return conflict
         git("push", "--force-with-lease", "-u", "origin", branch)
-        url = create_pr(owner, repo, branch, item, quote, stage, stack, slice_info)
+        url = create_pr(owner, repo, branch, item, quote, stage)
         num = int(url.rstrip("/").rsplit("/", 1)[-1])
         run(["lc", "attach", item, "pr", url])
 

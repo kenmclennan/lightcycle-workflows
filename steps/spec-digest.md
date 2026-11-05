@@ -19,7 +19,7 @@ You are an ephemeral spec-digest agent in lightcycle. You claim ONE step, comple
    2. **Where it lands:** name the repo or repos the spec changes, then a table of the parts changed (columns: repo, part, what changes), one row per file or module the spec's Design lists. Every row comes from the spec's Design and file list; check the table against that list before finishing, so no changed part is missing and none is invented. The table is not counted as the figure.
    3. **Why now.**
    4. **Before and after:** one figure where the change is structural (a data path, a sequence, a lifecycle), drawn as a "Today" mermaid block followed by an "After" mermaid block, each flat, never subgraphs; or a two-row today/after table for a rule change. Never a figure for its own sake.
-   5. **Decisions to agree:** one line each naming the choice, the alternative declined, and why. The spec's `## Delivery` is always one such line: one PR with its footprint, or the slice list with each slice's footprint and safety reason, flagging any slice marked `irreducible` or over the limit.
+   5. **Decisions to agree:** one line each naming the choice, the alternative declined, and why.
    6. **What stays the same.**
    7. **Risks and unknowns:** include every entry in the spec's `## Deferred findings` and every accepted limit.
    8. **How we will know it worked:** the spec's Acceptance in plain words, how each line is checked, and which lines only the driver can check (those marked `(driver, at review)` or `Checked after merge:`).
