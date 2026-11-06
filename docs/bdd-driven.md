@@ -40,6 +40,13 @@ flowchart TD
         RC -->|rejected| IF
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| IF
+        IF -->|retried| IF
+        RC -->|recut| CD
+        CAM -->|stack-shape| RS{{"review-stack"}}
+        WCI -->|stack-shape| RS
+        RS -->|reopen| WCI
+        RS -->|fold| CD
+        RS -->|drop| IF
         COP -->|conflicted| RCF["resolve-conflict"]
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
@@ -64,4 +71,5 @@ flowchart TD
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
 | `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
+| `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
 | `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto`, falling back to one PR on exit 9), CI, review, human merge (a stack with `gh stack merge <n>`). |
