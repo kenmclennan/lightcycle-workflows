@@ -57,7 +57,7 @@ flowchart TD
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
 | `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
 | `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
-| `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR; opens a stack with `gh stack submit --auto` when the worktree holds one, falling back to one PR on exit 9. |
+| `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR; opens a stack with `gh stack submit --auto --open` when the worktree holds one, falling back to one PR on exit 9. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |
 | `code-await-merge` | human | Merges the code PR (a stack with `gh stack merge <n>`, from the top or bottom-up), or routes changes/feedback back. |

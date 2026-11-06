@@ -318,17 +318,17 @@ def rebase_stack(valid_outcomes):
 
 
 def submit_stack(branch):
-    proc = run(["gh", "stack", "submit", "--auto"], check=False)
+    proc = run(["gh", "stack", "submit", "--auto", "--open"], check=False)
     if proc.returncode == STACKS_DISABLED:
         return None
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout).strip()
-        raise Fail(f"gh stack submit --auto failed ({proc.returncode}): {detail}")
+        raise Fail(f"gh stack submit --auto --open failed ({proc.returncode}): {detail}")
     found = STACK_URL.search(proc.stdout + proc.stderr)
     if not found:
         found = STACK_URL.search(run(["gh", "stack", "view", "--json"], check=False).stdout)
     if not found:
-        raise Fail("gh stack submit --auto succeeded but printed no stack url")
+        raise Fail("gh stack submit --auto --open succeeded but printed no stack url")
     return found.group(0)
 
 
@@ -337,7 +337,7 @@ def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, reco
     for index, name in enumerate(names, start=1):
         pr = find_pr(owner, repo, name)
         if not pr:
-            raise Fail(f"gh stack submit --auto left no open PR for layer {index} ({name})")
+            raise Fail(f"gh stack submit --auto --open left no open PR for layer {index} ({name})")
         lines = []
         if delivery and delivery["layers"].get(index):
             lines.append(f"Layer {index}: {delivery['layers'][index]}")
