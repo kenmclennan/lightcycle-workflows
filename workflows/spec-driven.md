@@ -53,6 +53,7 @@ phase:
   review-ci                 code
   code-handle-feedback      code
   review-conflict           code
+  review-stack              code
 
 display:
   spec-writer               Writing spec
@@ -75,6 +76,7 @@ display:
   review-conflict           Resolve conflict
   review-ci                 CI needs a call
   code-handle-feedback      Reading feedback
+  review-stack              Stack shape needs a call
 
 nodes:
   spec-open-pr              open-pr
@@ -100,6 +102,7 @@ edges:
   spec-await-merge          spec-merged    write-code
   spec-await-merge          head-moved     spec-await-merge
   write-code                done           cut-delivery
+  write-code                retried        write-code
   cut-delivery              done           code-open-pr
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
@@ -114,12 +117,19 @@ edges:
   watch-ci                  review-rework  write-code
   review-code               done           code-await-merge  primary
   review-code               rejected       write-code
+  review-code               recut          cut-delivery
   code-await-merge          merged         cleanup
   cleanup                   done
   code-await-merge          changes        write-code
   code-await-merge          conflicted     resolve-conflict
   code-await-merge          gave-up        review-conflict
   code-await-merge          head-moved     poll-ci
+  poll-ci                   stack-shape    review-stack
+  watch-ci                  stack-shape    review-stack
+  code-await-merge          stack-shape    review-stack
+  review-stack              reopen         poll-ci
+  review-stack              fold           cut-delivery
+  review-stack              drop           write-code
   resolve-conflict          resolved       code-open-pr      primary
   resolve-conflict          escalate       review-conflict
   review-ci                 reviewed
@@ -146,6 +156,9 @@ hooks:
   pr_head_moved         code-await-merge      head-moved
   pr_conflict           poll-ci               conflicted
   pr_conflict           watch-ci              conflicted
+  pr_stack_shape        poll-ci               stack-shape
+  pr_stack_shape        watch-ci              stack-shape
+  pr_stack_shape        code-await-merge      stack-shape
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci

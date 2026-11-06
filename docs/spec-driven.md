@@ -29,6 +29,13 @@ flowchart TD
         RC -->|rejected| WC
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| WC
+        WC -->|retried| WC
+        RC -->|recut| CD
+        CAM -->|stack-shape| RS{{"review-stack"}}
+        WCI -->|stack-shape| RS
+        RS -->|reopen| WCI
+        RS -->|fold| CD
+        RS -->|drop| WC
         COP -->|conflicted| RCF["resolve-conflict"]
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
@@ -49,6 +56,7 @@ flowchart TD
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
 | `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
+| `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
 | `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR; opens a stack with `gh stack submit --auto` when the worktree holds one, falling back to one PR on exit 9. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |

@@ -84,6 +84,7 @@ phase:
   amend-resolve-conflict    amend
   amend-review-conflict     amend
   review-conflict           code
+  review-stack              code
 
 display:
   spec-writer               Writing spec
@@ -116,6 +117,7 @@ display:
   review-conflict           Resolve conflict
   review-ci                 CI needs a call
   code-handle-feedback      Reading feedback
+  review-stack              Stack shape needs a call
   amend-writer              Amending scenario
   amend-open-pr             Opening scenario-amendment PR
   amend-poll-ci             Watching CI (scenario amendment)
@@ -188,6 +190,7 @@ edges:
   feature-resolve-conflict  escalate           feature-review-conflict
   feature-review-conflict   resolved           feature-open-pr      primary
   implement-features        done               cut-delivery
+  implement-features        retried            implement-features
   cut-delivery              done               code-open-pr
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
@@ -203,12 +206,19 @@ edges:
   watch-ci                  review-rework      implement-features
   review-code               done               code-await-merge     primary
   review-code               rejected           implement-features
+  review-code               recut              cut-delivery
   code-await-merge          merged             cleanup
   cleanup                   done
   code-await-merge          changes            implement-features
   code-await-merge          conflicted         resolve-conflict
   code-await-merge          gave-up            review-conflict
   code-await-merge          head-moved         poll-ci
+  poll-ci                   stack-shape        review-stack
+  watch-ci                  stack-shape        review-stack
+  code-await-merge          stack-shape        review-stack
+  review-stack              reopen             poll-ci
+  review-stack              fold               cut-delivery
+  review-stack              drop               implement-features
   resolve-conflict          resolved           code-open-pr         primary
   resolve-conflict          escalate           review-conflict
   amend-writer              done               amend-open-pr
@@ -266,6 +276,9 @@ hooks:
   pr_head_moved         code-await-merge      head-moved
   pr_conflict           poll-ci               conflicted
   pr_conflict           watch-ci              conflicted
+  pr_stack_shape        poll-ci               stack-shape
+  pr_stack_shape        watch-ci              stack-shape
+  pr_stack_shape        code-await-merge      stack-shape
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
