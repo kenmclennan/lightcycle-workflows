@@ -8,7 +8,7 @@ on:
     - cron: "0 6 * * *"
 
 env:
-  ENGINE_PIN: 743ee3b4bfa7416685175dab7cc5e60db439adbe
+  ENGINE_PIN: 9fe375ba0d64f65fd2755426db487338e458115b
 
 permissions:
   contents: read
@@ -121,9 +121,7 @@ jobs:
             echo "== lc workflow check ci-bundle/$name =="
             lc workflow check "ci-bundle/$name" || fail=1
             echo "== lc workflow simulate ci-bundle/$name =="
-            slices_flag=""
-            if grep -q '^slices:' "$f"; then slices_flag="--slices 3 --trace"; fi
-            lc workflow simulate "ci-bundle/$name" $slices_flag || fail=1
+            lc workflow simulate "ci-bundle/$name" || fail=1
             echo "== lc workflow describe ci-bundle/$name --mermaid =="
             lc workflow describe "ci-bundle/$name" --mermaid || fail=1
           done
