@@ -360,6 +360,119 @@ class OpenPrNonMainBaseTest(ScriptCase):
         self.assertEqual(json.loads(result.stdout)["outcome"], "conflicted")
 
 
+DELIVERY = (
+    "Decision: stack\n"
+    "Reasons: the change has two seams a reviewer reads apart\n"
+    "Layer 1: the data model, cut here because nothing else depends on it yet\n"
+    "Layer 2: the caller, cut here because it needs the model"
+)
+
+
+class StackedOpenPrTest(ScriptCase):
+    def stacked(self, **cfg):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n", "feat(model): add the model\n\nmodel body")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("caller.txt", "c\n", "feat(caller): use the model\n\ncaller body")
+        self.gh_state["stack"] = dict({"branches": ["feat/x-1", "feat/x"]}, **cfg)
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+    def pulls(self):
+        return self.read_gh_state()["pulls"]
+
+    def test_stack_submits_and_attaches_the_stack_and_the_top_pr(self):
+        self.stacked()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        stack_calls = [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
+        self.assertIn("rebase", stack_calls)
+        self.assertIn("submit --auto", stack_calls)
+        self.assertEqual(
+            self.lc_calls(),
+            [
+                ["attach", self.item, "stack", "https://github.com/o/r/stack/7"],
+                ["attach", self.item, "pr", "https://github.com/o/r/pull/2"],
+            ],
+        )
+        creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
+        self.assertEqual(creates, [])
+
+    def test_each_layer_body_quotes_its_own_layer_line(self):
+        self.stacked()
+
+        self.assertEqual(self.run_script("open-pr.py").returncode, 0)
+
+        lower, top = self.pulls()
+        self.assertEqual(lower["title"], "feat(model): add the model")
+        self.assertTrue(lower["body"].startswith(f"<!-- lc:item={self.item} -->\n<!-- lc:body -->"))
+        self.assertIn("model body", lower["body"])
+        self.assertIn("## Delivery\n\nLayer 1: the data model", lower["body"])
+        self.assertNotIn("Layer 2", lower["body"])
+        self.assertNotIn("Decision:", lower["body"])
+        self.assertNotIn("Closing note", lower["body"])
+        self.assertEqual(top["title"], "feat(caller): use the model")
+        self.assertIn("Decision: stack\nReasons: the change has two seams", top["body"])
+        self.assertIn("Layer 2: the caller", top["body"])
+        self.assertNotIn("Layer 1", top["body"])
+        self.assertIn("## Closing note from write-code\n\nbuilt the thing", top["body"])
+
+    def test_exit_nine_lands_as_one_pr_with_the_fallback_noted(self):
+        self.stacked(submit_rc=9)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        (pull,) = self.pulls()
+        self.assertEqual(pull["head"], "feat/x")
+        self.assertIn("Stacks are not enabled for this repo", pull["body"])
+        self.assertIn("Decision: stack", pull["body"])
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
+
+    def test_other_stack_failure_fails_the_stage(self):
+        self.stacked(submit_rc=3)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("gh stack submit --auto failed (3)", result.stderr)
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_rerun_updates_the_same_layers_without_duplicates(self):
+        self.stacked()
+        self.assertEqual(self.run_script("open-pr.py").returncode, 0)
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/2"
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.pulls()), 2)
+        self.assertIn("Layer 1: the data model", self.pulls()[0]["body"])
+
+    def test_no_stack_takes_todays_path_and_attaches_no_stack(self):
+        self.feature_branch()
+        self.lc_show["inputs"]["item"] = [
+            {"name": "delivery", "value": "Decision: one-pr\nReasons: one seam"}
+        ]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
+        self.assertNotIn("Delivery", self.pulls()[0]["body"])
+        self.assertEqual([c for c in self.gh_calls() if c["method"] == "STACK"], [
+            c for c in self.gh_calls() if c["method"] == "STACK" and c["path"] == "view --json"
+        ])
+
+
 class CompletionRepliesTest(ScriptCase):
     def ack(self, cid, stamp, extra=""):
         return {"id": cid, "created_at": stamp, "body": f"<!-- lc -->\n<!-- lc:decision=rework -->\n{extra}ack"}

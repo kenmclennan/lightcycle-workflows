@@ -4,10 +4,11 @@ accepts:
   digest: optional
   brief: optional
   deferred-findings: optional
+  delivery: optional
 produces:
   pr: required
 presents: pr
-detail: [pr, report, in:digest, in:brief, in:deferred-findings]
+detail: [pr, report, in:digest, in:brief, in:deferred-findings, in:delivery]
 ---
 
 # Await-merge (you + driver)
@@ -20,7 +21,8 @@ A PR is green and comments resolved - ready to merge. When the base requires up-
    - **If the item has a `digest` artifact, read it and lead the summary with it.** The digest is the human's way in to a spec; the spec is the reference. No `digest` artifact means nothing to add here.
    - **If the Detail tab shows `in:deferred-findings`, file each finding as a standalone item before anything merges, and name them in the summary to the human.** The text is blocks headed `[<stage>]`, one dash-led entry per defect an agent found and chose not to fix; workers cannot file items, so this is the only place they surface. File each entry that is not already filed (the same text shows again at a later gate of the same item, so an entry you filed at an earlier gate is skipped), quoting the entry in the new item's description. If an entry should not be filed, say which and why in the summary. No `deferred-findings` means nothing to file here.
    - **Run every `Checked after merge:` bullet in the spec before anything merges.** If `lc show ITEM` lists a `spec` artifact, read it for Acceptance bullets that begin with the literal `Checked after merge:` (`spec-writer` marks the ones that need live data a build worker cannot read). Run each bullet's command, compare the result with its pass condition, and state each outcome in the summary to the human. A failed check is a reason not to merge: ask for changes on the PR as in step 5, naming the bullet and what the command returned. No `spec` artifact, or no such bullet, means nothing to run here.
-3. The human merges it on GitHub - their call, their click. Under the autopilot grant above, the driver merges it directly, having already confirmed in step 2 that it is green and comments are resolved.
+   - **If the Detail tab shows `in:delivery`, lead the summary with its `Decision`; for a stack, list the layers from the claim's `stack_layers` with each layer's reason from its `Layer <n>` line.** `cut-delivery` writes `delivery` once, so it shows at every later gate of the item. No `delivery` means nothing to add here.
+3. The human merges it on GitHub - their call, their click. Under the autopilot grant above, the driver merges it directly, having already confirmed in step 2 that it is green and comments are resolved. A stacked PR is merged with `gh stack merge <n> --squash --yes`, not `gh pr merge`, which GitHub refuses on a stack; `<n>` is the layer to merge up to, with everything below it included. Merging the top layer merges the whole stack, and the item closes through the merge hook. Merging only lower layers leaves the item at this gate: GitHub retargets the layer above, the engine re-reads that layer's CI, it notes the progress on the step, and the item closes once the top layer is merged. You may merge from the top or bottom-up, merging lower layers while the upper ones are reworked.
 4. The pool's PR monitor closes the item automatically once GitHub shows the merge; run `lc done STEP <outcome>` yourself only if it has not caught up yet, where `<outcome>` is this gate's merge outcome: the one on the dashed `pr_merge: <outcome>` edge out of this stage in `lc workflow describe <workflow>` (`merged`, `spec-merged`, `features-merged`, `scenario-merged` or `no-change-merged`), which must also appear in `.valid_outcomes`. Never type `merged` by habit; most gates in a spec-first workflow do not have it.
 5. If it needs changes instead of merging, ask for them **on the PR**, not in the store: post a top-level comment mentioning the gate's feedback token (`@lc` in the built-in bundles - the `mention_token` hook on this node names it) saying exactly what to change and why. The pool's PR monitor spawns `handle-feedback`, which decides rework vs answer, replies on the thread carrying `<!-- lc -->` to record that decision, and routes this step for you. Do NOT run `lc done STEP changes` yourself while there is a PR to comment on - it skips the recorded reply, leaves the reviewer's reasoning where no reviewer will look, and never advances the comment ledger. Fall back to `lc done STEP changes --note "..."` only when there is no PR thread to post to.
 

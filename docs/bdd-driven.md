@@ -32,7 +32,7 @@ flowchart TD
     end
     FAM -->|features-merged| IF["implement-features"]
     subgraph C ["code phase (project repo)"]
-        IF --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
+        IF --> CD["cut-delivery"] --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| IF
         WCI -->|review-rework| IF
         WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
@@ -63,4 +63,5 @@ flowchart TD
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
-| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR, CI, review, human merge. |
+| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto`, falling back to one PR on exit 9), CI, review, human merge (a stack with `gh stack merge <n>`). |

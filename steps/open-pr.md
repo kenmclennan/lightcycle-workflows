@@ -2,6 +2,7 @@
 script: scripts/open-pr.py
 accepts:
   branch: optional
+  delivery: optional
 produces:
   pr: required
   branch: required
@@ -14,6 +15,7 @@ An engine-owned script stage: no agent claims it. `scripts/open-pr.py` runs in t
 
 1. Read the step: the closing note QUOTE is `inputs.previous.report` under a heading naming `inputs.previous.stage`. The branch is the worktree's current branch, and OWNER and REPO come from the `origin` remote. The workspace decides which repo the PR opens in, not the item's `repo`.
 2. `git fetch origin`, then sync to the remote head: no remote branch, equal heads, or local commits the remote lacks do nothing; otherwise a clean tree is reset to `origin/BRANCH` and the note names LOCAL and REMOTE, and a dirty tree fails naming both SHAs and the dirty paths.
+   - **Stack fork.** If the worktree holds a stack (`gh stack view --json` lists two or more branches, the last being BRANCH), steps 3 to 6 are replaced: `gh stack rebase` in place of step 4's rebase, with a conflict aborted and printed as `conflicted`; then `gh stack submit --auto`, which pushes and opens a PR per layer; then `lc attach ITEM stack STACK_URL` and `lc attach ITEM pr TOP_URL`. Each layer's PR body is the item marker, then between the sync markers that layer's tip commit message and a `## Delivery` section quoting its `Layer <n>` line from the item's `delivery` entry; the top layer's body also carries the `Decision` and `Reasons` lines and the QUOTE. Titles are each layer's tip commit subject. Exit code 9 from `gh stack` (stacks not enabled for the repo) falls back to one PR from BRANCH with steps 3 to 6 as written, its body noting that stacks are not enabled and carrying the `delivery` reasons, and no `stack` attached; any other non-zero exit fails the stage. Steps 7 and 8 then follow. A worktree with no stack never takes this fork.
 3. Look up an open PR for the branch. If one exists, `git push --force-with-lease`, then resync the text between the `<!-- lc:body -->` and `<!-- /lc:body -->` markers from the commit message and QUOTE, add the `<!-- lc:item=ITEM -->` marker if absent, leave everything outside the markers and a body without markers alone, resync the title to the commit subject, and continue at step 7. If none exists but the phase run already records a `pr`, fail naming the divergence. Otherwise continue.
 4. Resolve BASE_REF: `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, which prints `origin/<the repo's default branch>`; a failure to resolve it fails the stage naming git's output and never falls back to a literal branch name. Then `git rebase BASE_REF`. On conflict, abort the rebase and print `conflicted` when the stage declares that outcome, otherwise fail naming the conflicting paths.
 5. `git push --force-with-lease`. A failure exits non-zero with git's message.

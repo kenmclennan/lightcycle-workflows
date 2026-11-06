@@ -15,6 +15,29 @@ state_path = os.environ["STUB_DIR"] + "/gh-state.json"
 log_path = os.environ["STUB_DIR"] + "/gh-calls.jsonl"
 state = json.load(open(state_path))
 args = sys.argv[1:]
+if args[0] == "stack":
+    with open(log_path, "a") as log:
+        log.write(json.dumps({"method": "STACK", "path": " ".join(args[1:]), "fields": {}}) + "\\n")
+    cfg = state.get("stack")
+    sub = args[1]
+    if sub == "view":
+        if not cfg or not cfg.get("branches"):
+            sys.stderr.write("not in a stack\\n"); sys.exit(1)
+        print(json.dumps({"trunk": "main", "branches": [{"name": n} for n in cfg["branches"]]}))
+    elif sub == "rebase":
+        sys.exit(cfg.get("rebase_rc", 0))
+    elif sub == "submit":
+        rc = cfg.get("submit_rc", 0)
+        if rc:
+            sys.stderr.write("stacks are not enabled\\n"); sys.exit(rc)
+        for name in cfg["branches"]:
+            if not any(p.get("head") == name for p in state["pulls"]):
+                num = len(state["pulls"]) + 1
+                state["pulls"].append({"number": num, "html_url": "https://github.com/o/r/pull/%%d" %% num,
+                                       "title": "auto " + name, "body": "auto body", "head": name})
+        json.dump(state, open(state_path, "w"))
+        print("Stack: https://github.com/o/r/stack/7")
+    sys.exit(0)
 assert args[0] == "api"
 method, fields, path = None, {}, None
 i = 1
@@ -43,18 +66,19 @@ def out(value):
 
 bare = path.split("?")[0]
 if method == "GET" and bare.endswith("/pulls"):
-    out(state["pulls"])
+    wanted = path.partition("head=")[2].partition("&")[0].partition(":")[2]
+    out([p for p in state["pulls"] if not wanted or p.get("head", wanted) == wanted])
 elif method == "POST" and bare.endswith("/pulls"):
     if state.get("create_error"):
         if state.get("create_server_side"):
             num = len(state["pulls"]) + 1
             state["pulls"].append({"number": num, "html_url": "https://github.com/o/r/pull/%%d" %% num,
-                                   "title": fields["title"], "body": fields["body"]})
+                                   "title": fields["title"], "body": fields["body"], "head": fields["head"]})
             save()
         sys.stderr.write("gh: HTTP 502\\n"); sys.exit(1)
     num = len(state["pulls"]) + 1
     pull = {"number": num, "html_url": "https://github.com/o/r/pull/%%d" %% num,
-            "title": fields["title"], "body": fields["body"]}
+            "title": fields["title"], "body": fields["body"], "head": fields["head"]}
     state["pulls"].append(pull); save(); out(pull)
 elif re.search(r"/pulls/\\d+$", bare):
     num = int(bare.rsplit("/", 1)[1])
@@ -62,11 +86,11 @@ elif re.search(r"/pulls/\\d+$", bare):
     if method == "PATCH":
         pull.update(fields); save()
     out(pull)
-elif method == "GET" and bare.endswith("/issues/%%d/comments" %% 1):
+elif method == "GET" and re.search(r"/issues/\\d+/comments$", bare):
     out(state.get("issue_comments", []))
-elif method == "GET" and bare.endswith("/pulls/1/comments"):
+elif method == "GET" and re.search(r"/pulls/\\d+/comments$", bare):
     out(state.get("review_comments", []))
-elif method == "GET" and bare.endswith("/pulls/1/reviews"):
+elif method == "GET" and re.search(r"/pulls/\\d+/reviews$", bare):
     out(state.get("reviews", []))
 elif method == "POST":
     out({"id": 999})
