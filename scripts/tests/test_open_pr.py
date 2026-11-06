@@ -634,3 +634,130 @@ class CompletionRepliesTest(ScriptCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+IRREDUCIBLE_DELIVERY = (
+    "Decision: stack\n"
+    "Reasons: the change has two seams a reviewer reads apart\n"
+    "Layer 1: the data model, irreducible - one schema that cannot be split\n"
+    "Layer 2: the caller, cut here because it needs the model"
+)
+
+
+class SizeCheckTest(ScriptCase):
+    def setUp(self):
+        super().setUp()
+        self.lc_show["valid_outcomes"] = ["done", "conflicted", "too-big"]
+        self.write_lc_show()
+
+    def stacked(self, lines, delivery=DELIVERY):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n" * lines, "feat(model): add the model\n\nmodel body")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("caller.txt", "c\n", "feat(caller): use the model\n\ncaller body")
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": delivery}]
+        self.write_lc_show()
+
+    def one_pr(self, lines, delivery):
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("big.txt", "b\n" * lines, "feat(x): big\n\nbody")
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": delivery}]
+        self.write_lc_show()
+
+    def assert_nothing_pushed(self):
+        writes = [c for c in self.gh_calls() if c["method"] not in ("GET",) and c["path"] != "view --json"]
+        self.assertEqual(writes, [])
+        self.assertEqual(self.lc_calls(), [])
+        remote = sh("git", "ls-remote", "--heads", "origin", "feat/x", cwd=self.work).stdout
+        self.assertEqual(remote, "")
+
+    def test_oversized_layer_not_marked_irreducible_closes_too_big_and_pushes_nothing(self):
+        self.stacked(500)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertEqual(
+            out["note"],
+            "Re-cut: layer 1 of 2 is 500 lines, over layer-lines-limit 400 and not marked irreducible",
+        )
+        self.assert_nothing_pushed()
+
+    def test_the_same_layer_marked_irreducible_opens(self):
+        self.stacked(500, IRREDUCIBLE_DELIVERY)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertEqual(len(self.read_gh_state()["pulls"]), 2)
+
+    def test_layers_under_the_limit_open_as_today(self):
+        self.stacked(399)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_an_unset_key_uses_400_and_a_set_key_overrides_it(self):
+        self.stacked(401)
+        self.assertEqual(json.loads(self.run_script("open-pr.py").stdout)["outcome"], "too-big")
+
+        result = self.run_script("open-pr.py", {"LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT": "500"})
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_a_malformed_key_fails_naming_it(self):
+        self.stacked(10)
+
+        result = self.run_script("open-pr.py", {"LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT": "lots"})
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("layer-lines-limit", result.stderr)
+
+    def test_layer_two_is_measured_against_layer_one(self):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n" * 300, "feat(model): add the model")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("caller.txt", "c\n" * 300, "feat(caller): use the model")
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_one_pr_over_the_limit_is_refused_unless_reasons_say_irreducible(self):
+        self.one_pr(500, "Decision: one-pr\nReasons: one seam")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(json.loads(result.stdout)["outcome"], "too-big")
+        self.assertIn("the one PR is 500 lines", json.loads(result.stdout)["note"])
+        self.assert_nothing_pushed()
+
+    def test_one_pr_marked_irreducible_in_reasons_opens(self):
+        self.one_pr(500, "Decision: one-pr\nReasons: irreducible - one generated schema")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_a_stage_without_a_too_big_outcome_is_never_measured(self):
+        self.lc_show["valid_outcomes"] = ["done", "conflicted"]
+        self.one_pr(900, "Decision: one-pr\nReasons: one seam")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")

@@ -199,8 +199,9 @@ class ScriptCase(unittest.TestCase):
             return []
         return [json.loads(line) for line in path.read_text().splitlines()]
 
-    def run_script(self, name):
+    def run_script(self, name, extra_env=None):
         env = dict(os.environ)
+        env.update(extra_env or {})
         env["PATH"] = f"{self.bin}{os.pathsep}{env['PATH']}"
         env["STUB_DIR"] = str(self.stub)
         env["LC_STEP"] = self.step
