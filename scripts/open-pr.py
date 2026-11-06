@@ -317,6 +317,54 @@ def rebase_stack(valid_outcomes):
     )
 
 
+STACK_NUMBER = re.compile(r"/([^/\s]+)/([^/\s]+)/stack/(\d+)$")
+
+
+def github_layers(owner, repo, stack_url):
+    found = STACK_NUMBER.search(stack_url or "")
+    if not found:
+        return None
+    proc = run(["gh", "api", f"repos/{found.group(1)}/{found.group(2)}/stacks/{found.group(3)}"], check=False)
+    if proc.returncode != 0:
+        if "HTTP 404" in (proc.stderr or proc.stdout):
+            return None
+        detail = (proc.stderr or proc.stdout).strip()
+        raise Fail(f"reading the stack {stack_url} failed ({proc.returncode}): {detail}")
+    try:
+        entries = json.loads(proc.stdout)["pull_requests"]
+        return {
+            "number": found.group(3),
+            "layers": [
+                {"number": e["number"], "head": e["head"]["ref"], "state": e.get("state")}
+                for e in entries
+                if not e.get("merged_at")
+            ],
+        }
+    except (ValueError, KeyError, TypeError):
+        raise Fail(f"could not parse the stack {stack_url} read from GitHub")
+
+
+def recut_stack(owner, repo, names, recorded_stack):
+    current = github_layers(owner, repo, recorded_stack)
+    if not current or [layer["head"] for layer in current["layers"]] == names:
+        return None
+    run(["gh", "stack", "unstack", current["number"]])
+    run(["gh", "stack", "init", *names])
+    return [layer for layer in current["layers"] if layer["head"] not in names]
+
+
+def close_dropped(owner, repo, dropped, top_url):
+    base = f"repos/{owner}/{repo}"
+    for layer in dropped:
+        if layer["state"] == "open":
+            gh_write(
+                f"{base}/issues/{layer['number']}/comments",
+                {"body": f"Layer dropped by a re-cut; see {top_url}"},
+            )
+            gh_write(f"{base}/pulls/{layer['number']}", {"state": "closed"}, method="PATCH")
+        run(["gh", "api", "-X", "DELETE", f"{base}/git/refs/heads/{layer['head']}"], check=False)
+
+
 def submit_stack(branch):
     proc = run(["gh", "stack", "submit", "--auto", "--open"], check=False)
     if proc.returncode == STACKS_DISABLED:
@@ -332,7 +380,7 @@ def submit_stack(branch):
     return found.group(0)
 
 
-def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, recorded):
+def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, recorded, replace=False):
     top_url = None
     for index, name in enumerate(names, start=1):
         pr = find_pr(owner, repo, name)
@@ -350,9 +398,10 @@ def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, reco
         )
         if top:
             top_url = pr["html_url"]
-    run(["lc", "attach", item, "stack", stack_url])
-    if recorded != top_url:
-        run(["lc", "attach", item, "pr", top_url])
+    flag = ["--replace"] if replace else []
+    run(["lc", "attach", item, "stack", stack_url, *flag])
+    if replace or recorded != top_url:
+        run(["lc", "attach", item, "pr", top_url, *flag])
     return top_url
 
 
@@ -380,6 +429,15 @@ def main():
         None,
     )
 
+    recorded_stack = next(
+        (
+            r.get("stack")
+            for r in reversed(step.get("runs", []))
+            if r.get("pass") == step.get("pass") and r.get("phase") == step.get("phase")
+        ),
+        None,
+    )
+
     abort_stale_rebase()
     branch = git("branch", "--show-current")
     if not branch:
@@ -401,9 +459,16 @@ def main():
         if conflict:
             return conflict
         git("checkout", branch)
+        dropped = recut_stack(owner, repo, names, recorded_stack)
         stack_url = submit_stack(branch)
         if stack_url:
-            url = open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, recorded)
+            url = open_stack(
+                owner, repo, item, quote, stage, names, delivery, stack_url, recorded,
+                replace=dropped is not None,
+            )
+            if dropped:
+                close_dropped(owner, repo, dropped, url)
+                notes.append(f"re-cut: closed {len(dropped)} dropped layer(s)")
             num = int(url.rstrip("/").rsplit("/", 1)[-1])
             replies = close_rework_loop(owner, repo, num)
             notes.append(f"stack {stack_url}, top PR {url}")
