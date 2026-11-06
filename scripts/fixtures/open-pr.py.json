@@ -1,4 +1,5 @@
 {
   "done": {"outcome": "done", "note": "PR https://github.com/example/repo/pull/1"},
-  "conflicted": {"outcome": "conflicted", "note": "rebase conflicts in README.md"}
+  "conflicted": {"outcome": "conflicted", "note": "rebase conflicts in README.md"},
+  "too-big": {"outcome": "too-big", "note": "Re-cut: layer 2 of 3 is 1172 lines, over layer-lines-limit 400 and not marked irreducible"}
 }

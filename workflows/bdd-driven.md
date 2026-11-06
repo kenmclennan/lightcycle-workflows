@@ -1,6 +1,10 @@
 ---
 summary: spec, then frozen gherkin scenarios, then code that makes every scenario pass
 when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
+config:
+  layer-lines-limit: optional
+config-example:
+  layer-lines-limit: 400
 ---
 
 # BDD-driven
@@ -195,6 +199,7 @@ edges:
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict
+  code-open-pr              too-big            cut-delivery
   poll-ci                   conflicted         resolve-conflict
   watch-ci                  conflicted         resolve-conflict
   poll-ci                   succeeded          watch-ci

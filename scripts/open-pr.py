@@ -11,6 +11,11 @@ BODY_OPEN = "<!-- lc:body -->"
 BODY_CLOSE = "<!-- /lc:body -->"
 
 
+LAYER_LINES_LIMIT_KEY = "layer-lines-limit"
+LAYER_LINES_LIMIT_ENV = "LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"
+LAYER_LINES_LIMIT_DEFAULT = 400
+
+
 class Fail(Exception):
     pass
 
@@ -405,6 +410,50 @@ def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, reco
     return top_url
 
 
+def layer_lines_limit():
+    raw = os.environ.get(LAYER_LINES_LIMIT_ENV, "").strip()
+    if not raw:
+        return LAYER_LINES_LIMIT_DEFAULT
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0:
+        raise Fail(f"the config key {LAYER_LINES_LIMIT_KEY} must be a positive integer, got {raw!r}")
+    return value
+
+
+def diff_lines(base, head):
+    total = 0
+    for line in git("diff", "--numstat", f"{base}...{head}").splitlines():
+        added, deleted = line.split("\t")[:2]
+        total += (int(added) if added.isdigit() else 0) + (int(deleted) if deleted.isdigit() else 0)
+    return total
+
+
+def marked_irreducible(text):
+    return bool(re.search(r"\birreducible\b", text or "", re.IGNORECASE))
+
+
+def oversized(names, delivery, base):
+    limit = layer_lines_limit()
+    over = []
+    if names:
+        for index, name in enumerate(names, start=1):
+            lower = base if index == 1 else names[index - 2]
+            count = diff_lines(lower, name)
+            if count > limit and not marked_irreducible(delivery["layers"].get(index, "")):
+                over.append(f"layer {index} of {len(names)} is {count} lines")
+    else:
+        count = diff_lines(base, "HEAD")
+        if count > limit and not marked_irreducible(delivery["reasons"]):
+            over.append(f"the one PR is {count} lines")
+    suffix = (
+        f", over {LAYER_LINES_LIMIT_KEY} {limit} and not marked irreducible"
+    )
+    return [item + suffix for item in over]
+
+
 def abort_stale_rebase():
     for name in ("rebase-merge", "rebase-apply"):
         if os.path.exists(git("rev-parse", "--git-path", name)):
@@ -453,6 +502,10 @@ def main():
 
     delivery = read_delivery(step)
     names = stack_branches(branch)
+    if "too-big" in valid and delivery:
+        over = oversized(names, delivery, base_ref())
+        if over:
+            return {"outcome": "too-big", "note": "Re-cut: " + "; ".join(over)}
     fallback = ""
     if names:
         conflict = rebase_stack(valid)

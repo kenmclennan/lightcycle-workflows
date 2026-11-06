@@ -48,6 +48,7 @@ flowchart TD
         RS -->|fold| CD
         RS -->|drop| IF
         COP -->|conflicted| RCF["resolve-conflict"]
+        COP -->|too-big| CD
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
         CAM -->|merged| CU(["cleanup"])
@@ -70,6 +71,6 @@ flowchart TD
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
-| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
+| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria (the bundle's own, `shared/layer-criteria.md`, not a guidance entry), cuts the layers, and records its reasons. |
 | `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
-| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto --open`, falling back to one PR on exit 9), CI, review, human merge (a stack with `gh stack merge <n>`). |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto --open`, falling back to one PR on exit 9), with the same size check: a layer over the `layer-lines-limit` config key (default 400) and not marked `irreducible` closes `too-big` and goes back to `cut-delivery`, CI, review, human merge (a stack with `gh stack merge <n>`). |
