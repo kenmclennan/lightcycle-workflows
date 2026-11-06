@@ -5,7 +5,7 @@ accepts:
 produces:
   pr: optional
 presents: pr
-detail: [pr, in:report, outcome]
+detail: [pr, stack, in:report, outcome]
 ---
 
 # Review-stack (you + driver)

@@ -8,7 +8,8 @@ accepts:
 produces:
   pr: required
 presents: pr
-detail: [pr, report, in:digest, in:brief, in:deferred-findings, in:delivery]
+# prettier-ignore
+detail: [pr, stack, report, in:digest, in:brief, in:deferred-findings, in:delivery]
 ---
 
 # Await-merge (you + driver)
