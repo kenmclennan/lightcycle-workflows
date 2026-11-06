@@ -456,6 +456,75 @@ class StackedOpenPrTest(ScriptCase):
         self.assertEqual(len(self.pulls()), 2)
         self.assertIn("Layer 1: the data model", self.pulls()[0]["body"])
 
+    def seed_github_stack(self, heads, **cfg):
+        for index, head in enumerate(heads, start=1):
+            self.gh_state["pulls"].append({
+                "number": index, "html_url": f"https://github.com/o/r/pull/{index}",
+                "title": head, "body": "old", "head": head, "state": "open",
+            })
+        self.gh_state["stack"]["github"] = {"heads": heads}
+        self.gh_state["stack"].update(cfg)
+        self.write_gh_state()
+        self.lc_show["runs"][0]["stack"] = "https://github.com/o/r/stack/7"
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/3"
+        self.write_lc_show()
+
+    def stack_calls(self):
+        return [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
+
+    def test_recut_that_drops_a_layer_closes_it_and_replaces_the_stack(self):
+        self.stacked()
+        self.seed_github_stack(["feat/x-1", "feat/x-mid", "feat/x"], submit_stack=8)
+        self.gh_state["pulls"][2]["head"] = "feat/x"
+        self.gh_state["pulls"][1]["head"] = "feat/x-mid"
+        self.gh_state["pulls"][0]["head"] = "feat/x-1"
+        self.write_gh_state()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.stack_calls()
+        self.assertLess(calls.index("unstack 7"), calls.index("init feat/x-1 feat/x"))
+        self.assertLess(calls.index("init feat/x-1 feat/x"), calls.index("submit --auto --open"))
+        mid = self.pulls()[1]
+        self.assertEqual(mid["state"], "closed")
+        comments = [c for c in self.gh_calls() if c["path"].endswith("/issues/2/comments") and c["method"] == "POST"]
+        self.assertEqual(comments[0]["fields"]["body"], "Layer dropped by a re-cut; see https://github.com/o/r/pull/3")
+        self.assertTrue(any(c["method"] == "DELETE" and c["path"].endswith("heads/feat/x-mid") for c in self.gh_calls()))
+        self.assertEqual(
+            self.lc_calls(),
+            [
+                ["attach", self.item, "stack", "https://github.com/o/r/stack/8", "--replace"],
+                ["attach", self.item, "pr", "https://github.com/o/r/pull/3", "--replace"],
+            ],
+        )
+        open_heads = [p["head"] for p in self.pulls() if p.get("state", "open") == "open"]
+        self.assertEqual(sorted(open_heads), ["feat/x", "feat/x-1"])
+
+    def test_unchanged_layer_set_does_not_unstack(self):
+        self.stacked()
+        self.seed_github_stack(["feat/x-1", "feat/x"])
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/2"
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.stack_calls()
+        self.assertNotIn("unstack 7", calls)
+        self.assertFalse([c for c in calls if c.startswith("init")])
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "stack", "https://github.com/o/r/stack/7"]])
+
+    def test_dissolved_recorded_stack_submits_as_a_first_open(self):
+        self.stacked()
+        self.lc_show["runs"][0]["stack"] = "https://github.com/o/r/stack/7"
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse([c for c in self.stack_calls() if c.startswith(("unstack", "init"))])
+
     def test_no_stack_takes_todays_path_and_attaches_no_stack(self):
         self.feature_branch()
         self.lc_show["inputs"]["item"] = [

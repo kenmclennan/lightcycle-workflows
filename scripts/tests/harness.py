@@ -26,6 +26,11 @@ if args[0] == "stack":
         print(json.dumps({"trunk": "main", "branches": [{"name": n} for n in cfg["branches"]]}))
     elif sub == "rebase":
         sys.exit(cfg.get("rebase_rc", 0))
+    elif sub == "unstack":
+        cfg.pop("github", None)
+        json.dump(state, open(state_path, "w"))
+    elif sub == "init":
+        pass
     elif sub == "submit":
         rc = cfg.get("submit_rc", 0)
         if rc:
@@ -36,10 +41,11 @@ if args[0] == "stack":
                 state["pulls"].append({"number": num, "html_url": "https://github.com/o/r/pull/%%d" %% num,
                                        "title": "auto " + name, "body": "auto body", "head": name})
         json.dump(state, open(state_path, "w"))
-        print("Stack: https://github.com/o/r/stack/7")
+        print("Stack: https://github.com/o/r/stack/%%d" %% cfg.get("submit_stack", 7))
     sys.exit(0)
 assert args[0] == "api"
 method, fields, path = None, {}, None
+gh_stack = (state.get("stack") or {}).get("github")
 i = 1
 while i < len(args):
     a = args[i]
@@ -65,7 +71,15 @@ def out(value):
     print(json.dumps(value))
 
 bare = path.split("?")[0]
-if method == "GET" and bare.endswith("/pulls"):
+if method == "GET" and re.search(r"/stacks/\\d+$", bare):
+    if not gh_stack:
+        sys.stderr.write("gh: HTTP 404\\n"); sys.exit(1)
+    out({"base": {"ref": "main"}, "pull_requests": [
+        {"number": p["number"], "state": p.get("state", "open"), "head": {"ref": p["head"], "sha": "x"}}
+        for h in gh_stack["heads"] for p in state["pulls"] if p["head"] == h]})
+elif method == "DELETE":
+    out({})
+elif method == "GET" and bare.endswith("/pulls"):
     wanted = path.partition("head=")[2].partition("&")[0].partition(":")[2]
     out([p for p in state["pulls"] if not wanted or p.get("head", wanted) == wanted])
 elif method == "POST" and bare.endswith("/pulls"):
