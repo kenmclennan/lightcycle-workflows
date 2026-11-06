@@ -391,7 +391,7 @@ class StackedOpenPrTest(ScriptCase):
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
         stack_calls = [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
         self.assertIn("rebase", stack_calls)
-        self.assertIn("submit --auto", stack_calls)
+        self.assertIn("submit --auto --open", stack_calls)
         self.assertEqual(
             self.lc_calls(),
             [
@@ -441,7 +441,7 @@ class StackedOpenPrTest(ScriptCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
-        self.assertIn("gh stack submit --auto failed (3)", result.stderr)
+        self.assertIn("gh stack submit --auto --open failed (3)", result.stderr)
         self.assertEqual(self.lc_calls(), [])
 
     def test_rerun_updates_the_same_layers_without_duplicates(self):
