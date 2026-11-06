@@ -1,6 +1,6 @@
 ---
 summary: spec, then frozen gherkin scenarios, then code that makes every scenario pass
-when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them
+when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
 ---
 
 # BDD-driven
@@ -10,8 +10,9 @@ when needed. A brief from co-design becomes a formal spec on a spec PR; once tha
 feature-writer derives executable gherkin `.feature` scenarios (tagged `@wip`, gherkin only so
 nothing collects them yet) on a feature PR that a review-features agent primes for the human; once
 that merges, implement-features writes the code and step definitions to make every scenario pass -
-implementing to the spec, un-`@wip`-ing each scenario as it goes green - opens a code PR, watches
-CI, is reviewed, and the human merges. Implement-features may never edit a scenario itself; if one
+implementing to the spec, un-`@wip`-ing each scenario as it goes green - cuts the delivery (one PR
+or a stack, decided once there and never by the spec), opens the code PR, watches CI, is reviewed,
+and the human merges. Implement-features may never edit a scenario itself; if one
 is wrong and a human has authorized the fix on the code PR's own comment thread, it hands off to
 the `amend` phase instead, which rewrites the named scenario(s) on their own PR and, once merged,
 hands back to implement-features on its next rebase. Absent that authorization a wrong scenario
@@ -38,6 +39,7 @@ workspace:
   nochange-await-merge      specs
   nochange-handle-feedback  specs
   feature-open-pr           project
+  cut-delivery              project
   code-open-pr              project
   amend-open-pr             project
   cleanup                   project
@@ -62,6 +64,7 @@ phase:
   feature-resolve-conflict  feature
   feature-review-conflict   feature
   implement-features        code
+  cut-delivery              code
   code-open-pr              code
   poll-ci                   code
   watch-ci                  code
@@ -102,6 +105,7 @@ display:
   feature-resolve-conflict  Resolving conflict (scenarios)
   feature-review-conflict   Resolve conflict (scenarios)
   implement-features        Coding
+  cut-delivery              Cutting delivery
   code-open-pr              Opening code PR
   poll-ci                   Watching CI
   watch-ci                  Reviewing CI result
@@ -183,7 +187,8 @@ edges:
   feature-resolve-conflict  resolved           feature-open-pr      primary
   feature-resolve-conflict  escalate           feature-review-conflict
   feature-review-conflict   resolved           feature-open-pr      primary
-  implement-features        done               code-open-pr
+  implement-features        done               cut-delivery
+  cut-delivery              done               code-open-pr
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict

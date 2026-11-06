@@ -21,7 +21,7 @@ flowchart TD
     end
     SAM -->|spec-merged| WC["write-code"]
     subgraph C ["code phase (project repo)"]
-        WC --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
+        WC --> CD["cut-delivery"] --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| WC
         WCI -->|review-rework| WC
         WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
@@ -48,9 +48,10 @@ flowchart TD
 | `spec-open-pr` / `spec-await-merge` | script / human | Opens the spec PR; the human reviews and merges it (the review gate). |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
-| `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR. |
+| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria, cuts the layers, and records its reasons. |
+| `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR; opens a stack with `gh stack submit --auto` when the worktree holds one, falling back to one PR on exit 9. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
 | `review-code` | agent | Reviews the diff against the spec and primes the human gate; bounces back on defects. |
-| `code-await-merge` | human | Merges the code PR, or routes changes/feedback back. |
+| `code-await-merge` | human | Merges the code PR (a stack with `gh stack merge <n>`, from the top or bottom-up), or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `cleanup` | script, terminal | The item is merged and done. |

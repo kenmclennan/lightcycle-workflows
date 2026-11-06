@@ -1,13 +1,14 @@
 ---
 summary: spec to merged - a co-designed brief becomes a spec PR, then the same item builds the code
-when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code
+when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
 ---
 
 # Spec-driven
 
 One item, one id, spanning the whole arc: a brief from co-design becomes a formal spec on a spec
-PR, and once that PR merges the same item continues into the code build - write the code, open a
-code PR, watch CI, review, human merge. There is no workflow flip: the spec phase and the code
+PR, and once that PR merges the same item continues into the code build - write the code, cut the
+delivery (one PR or a stack, decided once there and never by the spec), open the code PR, watch CI,
+review, human merge. There is no workflow flip: the spec phase and the code
 phase are two positions of one workflow. `open-pr` and `await-merge` each appear twice (once per
 PR); the spec-phase steps take their worktree from the specs repo (`specs-remote`), the code phase
 from the project repo. The human review gate is the spec PR itself - no separate inline
@@ -27,6 +28,7 @@ workspace:
   nochange-open-pr          specs
   nochange-await-merge      specs
   nochange-handle-feedback  specs
+  cut-delivery              project
   code-open-pr              project
   cleanup                   project
 
@@ -40,6 +42,7 @@ phase:
   nochange-await-merge      spec
   nochange-handle-feedback  spec
   write-code                code
+  cut-delivery              code
   code-open-pr              code
   poll-ci                   code
   watch-ci                  code
@@ -61,6 +64,7 @@ display:
   nochange-await-merge      Review spec (no change)
   nochange-handle-feedback  Reading feedback
   write-code                Coding
+  cut-delivery              Cutting delivery
   code-open-pr              Opening code PR
   poll-ci                   Watching CI
   watch-ci                  Reviewing CI result
@@ -95,7 +99,8 @@ edges:
   nochange-await-merge      head-moved     nochange-await-merge
   spec-await-merge          spec-merged    write-code
   spec-await-merge          head-moved     spec-await-merge
-  write-code                done           code-open-pr
+  write-code                done           cut-delivery
+  cut-delivery              done           code-open-pr
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
   poll-ci                   conflicted     resolve-conflict
