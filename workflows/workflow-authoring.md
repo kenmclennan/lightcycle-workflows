@@ -1,6 +1,8 @@
 ---
 summary: workflow design to merged bundle - a co-designed brief becomes a workflow-design spec PR, then the same item builds and gates the bundle
 when-to-use: building or updating a workflow bundle in this origin - a new workflow, an adaptation of an existing one, or a fork
+config:
+  layer-lines-limit: optional
 ---
 
 # Workflow-authoring

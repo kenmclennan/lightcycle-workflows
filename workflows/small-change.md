@@ -1,6 +1,8 @@
 ---
 summary: brief to merged in one PR - no spec, no separate review stage, for changes too small to justify either
 when-to-use: a change small and low-risk enough that a written spec and an agent review round would cost more than they'd ever catch
+config:
+  layer-lines-limit: optional
 ---
 
 # Small-change

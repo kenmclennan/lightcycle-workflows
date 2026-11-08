@@ -2,7 +2,7 @@
 summary: spec to merged - a co-designed brief becomes a spec PR, then the same item builds the code
 when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
 config:
-  layer-lines-limit: optional
+  layer-lines-limit: required
 config-example:
   layer-lines-limit: 400
 ---
