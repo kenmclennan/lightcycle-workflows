@@ -32,6 +32,8 @@ These copies are not checked and intentionally do not share text:
 
 The CI gate for a workflow change is `.github/workflows/simulate.yml`. For each workflow in the bundle it prints three log sections: `== lc workflow check ci-bundle/<name> ==`, `== lc workflow simulate ci-bundle/<name> ==` and `== lc workflow describe ci-bundle/<name> --mermaid ==`. Read a design's rendered mermaid from the describe section of the latest `push` run at the head sha, never a `schedule` run: a push run installs the engine at `ENGINE_PIN`, a schedule run installs the engine's `main` and can render slightly differently.
 
+The repo's own tests run with `python3 -m unittest discover -s scripts/tests -t scripts`, the same command CI runs; `-t scripts` matters because a different top-level directory discovers a different set of tests.
+
 ## Engine pin
 
 `audit-engine-pin` (the `bump-engine-pin` workflow) reads these facts from here, since they are true of this repo only.
