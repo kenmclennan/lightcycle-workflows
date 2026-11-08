@@ -13,7 +13,6 @@ BODY_CLOSE = "<!-- /lc:body -->"
 
 LAYER_LINES_LIMIT_KEY = "layer-lines-limit"
 LAYER_LINES_LIMIT_ENV = "LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"
-LAYER_LINES_LIMIT_DEFAULT = 400
 
 
 class Fail(Exception):
@@ -413,7 +412,7 @@ def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, reco
 def layer_lines_limit():
     raw = os.environ.get(LAYER_LINES_LIMIT_ENV, "").strip()
     if not raw:
-        return LAYER_LINES_LIMIT_DEFAULT
+        raise Fail(f"the config key {LAYER_LINES_LIMIT_KEY} is required and is not set")
     try:
         value = int(raw)
     except ValueError:

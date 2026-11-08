@@ -201,7 +201,12 @@ class ScriptCase(unittest.TestCase):
 
     def run_script(self, name, extra_env=None):
         env = dict(os.environ)
-        env.update(extra_env or {})
+        env["LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"] = "400"
+        for key, value in (extra_env or {}).items():
+            if value is None:
+                env.pop(key, None)
+            else:
+                env[key] = value
         env["PATH"] = f"{self.bin}{os.pathsep}{env['PATH']}"
         env["STUB_DIR"] = str(self.stub)
         env["LC_STEP"] = self.step

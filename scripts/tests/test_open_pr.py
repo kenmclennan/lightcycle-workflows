@@ -704,7 +704,7 @@ class SizeCheckTest(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
 
-    def test_an_unset_key_uses_400_and_a_set_key_overrides_it(self):
+    def test_a_set_key_overrides_the_limit(self):
         self.stacked(401)
         self.assertEqual(json.loads(self.run_script("open-pr.py").stdout)["outcome"], "too-big")
 
@@ -712,6 +712,24 @@ class SizeCheckTest(ScriptCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_an_unset_key_fails_naming_it(self):
+        self.stacked(10)
+
+        result = self.run_script("open-pr.py", {"LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT": None})
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("layer-lines-limit", result.stderr)
+
+    def test_a_blank_key_fails_naming_it(self):
+        self.stacked(10)
+
+        result = self.run_script("open-pr.py", {"LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT": "  "})
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("layer-lines-limit", result.stderr)
 
     def test_a_malformed_key_fails_naming_it(self):
         self.stacked(10)
