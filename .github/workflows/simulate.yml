@@ -25,8 +25,8 @@ jobs:
         with:
           node-version: "lts/*"
 
-      - name: Check formatting (workflows/*.md is hand-aligned and exempt)
-        run: npx --yes prettier --check --prose-wrap=never 'steps/*.md' 'docs/*.md'
+      - name: Check formatting (hand-aligned workflows/*.md listed in .prettierignore are exempt)
+        run: npx --yes prettier --check --prose-wrap=never $(git ls-files '*.md')
 
       - name: Lint markdown
         run: npx --yes markdownlint-cli2 'steps/*.md' 'workflows/*.md' 'docs/*.md'
