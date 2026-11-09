@@ -56,9 +56,8 @@ def gh_write(path, fields, method=None):
     try:
         for key, value in fields.items():
             if key == "body":
-                handle = tempfile.NamedTemporaryFile("w", suffix=".md", delete=False)
-                handle.write(value)
-                handle.close()
+                with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as handle:
+                    handle.write(value)
                 tmp.append(handle.name)
                 args += ["-F", f"body=@{handle.name}"]
             else:
