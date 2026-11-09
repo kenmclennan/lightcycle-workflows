@@ -1,3 +1,7 @@
+# Baseline
+
+# Permanent exclusions
+# Workflow definitions: prettier flattens the graph block the engine parses.
 workflows/bdd-driven.md
 workflows/bump-engine-pin.md
 workflows/daily-summary.md
