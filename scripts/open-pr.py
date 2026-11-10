@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime
 
 BODY_OPEN = "<!-- lc:body -->"
@@ -24,6 +25,37 @@ def run(args, check=True):
     if check and proc.returncode != 0:
         detail = (proc.stderr or proc.stdout).strip()
         raise Fail(f"{' '.join(args)} failed ({proc.returncode}): {detail}")
+    return proc
+
+
+STACK_LOCK_MESSAGE = "another process is currently editing the stack"
+STACK_LOCK_FIRST_WAIT = 5
+STACK_LOCK_MAX_WAIT = 20
+STACK_LOCK_WINDOW = 150
+
+sleep = time.sleep
+monotonic = time.monotonic
+
+
+def gh_stack(*args, check=True):
+    started = monotonic()
+    wait = STACK_LOCK_FIRST_WAIT
+    while True:
+        proc = run(["gh", "stack", *args], check=False)
+        output = (proc.stderr or "") + (proc.stdout or "")
+        if proc.returncode == 0 or STACK_LOCK_MESSAGE not in output:
+            break
+        remaining = STACK_LOCK_WINDOW - (monotonic() - started)
+        if remaining <= 0:
+            raise Fail(
+                f"gh stack {' '.join(args)} could not run: the gh stack lock "
+                f"({STACK_LOCK_MESSAGE}) stayed held for the {STACK_LOCK_WINDOW} s window waited"
+            )
+        sleep(min(wait, remaining))
+        wait = min(wait * 2, STACK_LOCK_MAX_WAIT)
+    if check and proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout).strip()
+        raise Fail(f"gh stack {' '.join(args)} failed ({proc.returncode}): {detail}")
     return proc
 
 
@@ -281,7 +313,7 @@ def delivery_section(lines):
 
 
 def stack_branches(branch):
-    proc = run(["gh", "stack", "view", "--json"], check=False)
+    proc = gh_stack("view", "--json", check=False)
     if proc.returncode != 0:
         return []
     try:
@@ -305,11 +337,11 @@ STACKS_DISABLED = 9
 
 def rebase_stack(valid_outcomes):
     git("fetch", "origin")
-    proc = run(["gh", "stack", "rebase"], check=False)
+    proc = gh_stack("rebase", check=False)
     if proc.returncode == 0:
         return None
     paths = git("diff", "--name-only", "--diff-filter=U", check=False).split()
-    run(["gh", "stack", "rebase", "--abort"], check=False)
+    gh_stack("rebase", "--abort", check=False)
     if not paths:
         detail = (proc.stderr or proc.stdout).strip()
         raise Fail(f"gh stack rebase failed with no conflicted paths: {detail}")
@@ -351,8 +383,8 @@ def recut_stack(owner, repo, names, recorded_stack):
     current = github_layers(owner, repo, recorded_stack)
     if not current or [layer["head"] for layer in current["layers"]] == names:
         return None
-    run(["gh", "stack", "unstack", current["number"]])
-    run(["gh", "stack", "init", *names])
+    gh_stack("unstack", current["number"])
+    gh_stack("init", *names)
     return [layer for layer in current["layers"] if layer["head"] not in names]
 
 
@@ -369,7 +401,7 @@ def close_dropped(owner, repo, dropped, top_url):
 
 
 def submit_stack(branch):
-    proc = run(["gh", "stack", "submit", "--auto", "--open"], check=False)
+    proc = gh_stack("submit", "--auto", "--open", check=False)
     if proc.returncode == STACKS_DISABLED:
         return None
     if proc.returncode != 0:
@@ -377,7 +409,7 @@ def submit_stack(branch):
         raise Fail(f"gh stack submit --auto --open failed ({proc.returncode}): {detail}")
     found = STACK_URL.search(proc.stdout + proc.stderr)
     if not found:
-        found = STACK_URL.search(run(["gh", "stack", "view", "--json"], check=False).stdout)
+        found = STACK_URL.search(gh_stack("view", "--json", check=False).stdout)
     if not found:
         raise Fail("gh stack submit --auto --open succeeded but printed no stack url")
     return found.group(0)

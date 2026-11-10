@@ -20,6 +20,11 @@ if args[0] == "stack":
         log.write(json.dumps({"method": "STACK", "path": " ".join(args[1:]), "fields": {}}) + "\\n")
     cfg = state.get("stack")
     sub = args[1]
+    locks = (cfg or {}).get("lock_failures") or {}
+    if locks.get(sub):
+        locks[sub] -= 1
+        json.dump(state, open(state_path, "w"))
+        sys.stderr.write("another process is currently editing the stack - try again later\\n"); sys.exit(1)
     if sub == "view":
         if not cfg or not cfg.get("branches"):
             sys.stderr.write("not in a stack\\n"); sys.exit(1)
