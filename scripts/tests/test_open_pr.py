@@ -1,9 +1,11 @@
 import json
 import os
+import importlib.util
 import subprocess
 import unittest
+from unittest import mock
 
-from tests.harness import ScriptCase, sh
+from tests.harness import SCRIPTS, ScriptCase, sh
 
 
 class OpenPrTest(ScriptCase):
@@ -779,3 +781,86 @@ class SizeCheckTest(ScriptCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+
+class StackLockTest(ScriptCase):
+    def load(self):
+        spec = importlib.util.spec_from_file_location("open_pr_under_test", SCRIPTS / "open-pr.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.clock = [0.0]
+        self.sleeps = []
+
+        def sleep(seconds):
+            self.sleeps.append(seconds)
+            self.clock[0] += seconds
+
+        module.sleep = sleep
+        module.monotonic = lambda: self.clock[0]
+        return module
+
+    def stacked(self, **cfg):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n", "feat(model): add the model")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.gh_state["stack"] = dict({"branches": ["feat/x-1", "feat/x"]}, **cfg)
+        self.write_gh_state()
+
+    def call(self, function, *args):
+        env = {"PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "STUB_DIR": str(self.stub)}
+        module = self.load()
+        previous = os.getcwd()
+        os.chdir(self.work)
+        try:
+            with mock.patch.dict(os.environ, env):
+                return module, getattr(module, function)(*args)
+        finally:
+            os.chdir(previous)
+
+    def stack_calls(self):
+        return [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
+
+    def test_rebase_retries_a_lock_failure_without_aborting(self):
+        self.stacked(lock_failures={"rebase": 1})
+
+        _, result = self.call("rebase_stack", ["done", "conflicted"])
+
+        self.assertIsNone(result)
+        self.assertEqual(self.stack_calls(), ["rebase", "rebase"])
+        self.assertEqual(self.sleeps, [5])
+
+    def test_rebase_waits_longer_between_tries_up_to_a_cap(self):
+        self.stacked(lock_failures={"rebase": 5})
+
+        self.call("rebase_stack", ["done"])
+
+        self.assertEqual(self.sleeps, [5, 10, 20, 20, 20])
+
+    def test_rebase_whose_lock_never_clears_fails_naming_the_lock(self):
+        self.stacked(lock_failures={"rebase": 1000})
+
+        with self.assertRaises(Exception) as caught:
+            self.call("rebase_stack", ["done", "conflicted"])
+
+        message = str(caught.exception)
+        self.assertIn("gh stack lock", message)
+        self.assertIn("150 s", message)
+        self.assertNotIn("--abort", self.stack_calls())
+        self.assertLessEqual(sum(self.sleeps), 150)
+
+    def test_submit_retries_a_lock_failure(self):
+        self.stacked(lock_failures={"submit": 2})
+
+        _, url = self.call("submit_stack", "feat/x")
+
+        self.assertEqual(url, "https://github.com/o/r/stack/7")
+        self.assertEqual(self.sleeps, [5, 10])
+
+    def test_a_failure_that_is_not_the_lock_is_not_retried(self):
+        self.stacked(submit_rc=3)
+
+        with self.assertRaises(Exception) as caught:
+            self.call("submit_stack", "feat/x")
+
+        self.assertIn("failed (3)", str(caught.exception))
+        self.assertEqual(self.sleeps, [])
