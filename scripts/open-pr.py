@@ -379,12 +379,24 @@ def github_layers(owner, repo, stack_url):
         raise Fail(f"could not parse the stack {stack_url} read from GitHub")
 
 
+def local_stack_names():
+    proc = gh_stack("view", "--json", check=False)
+    if proc.returncode != 0:
+        return []
+    try:
+        data = json.loads(proc.stdout)
+    except ValueError:
+        return []
+    return [b.get("name") for b in (data.get("branches") or []) if isinstance(b, dict)]
+
+
 def recut_stack(owner, repo, names, recorded_stack):
     current = github_layers(owner, repo, recorded_stack)
     if not current or [layer["head"] for layer in current["layers"]] == names:
         return None
     gh_stack("unstack", current["number"])
-    gh_stack("init", *names)
+    if local_stack_names() != names:
+        gh_stack("init", *names)
     return [layer for layer in current["layers"] if layer["head"] not in names]
 
 

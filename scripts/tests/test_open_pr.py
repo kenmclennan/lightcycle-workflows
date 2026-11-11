@@ -475,7 +475,7 @@ class StackedOpenPrTest(ScriptCase):
         return [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
 
     def test_recut_that_drops_a_layer_closes_it_and_replaces_the_stack(self):
-        self.stacked()
+        self.stacked(unstack_clears_local=True)
         self.seed_github_stack(["feat/x-1", "feat/x-mid", "feat/x"], submit_stack=8)
         self.gh_state["pulls"][2]["head"] = "feat/x"
         self.gh_state["pulls"][1]["head"] = "feat/x-mid"
@@ -502,6 +502,20 @@ class StackedOpenPrTest(ScriptCase):
         )
         open_heads = [p["head"] for p in self.pulls() if p.get("state", "open") == "open"]
         self.assertEqual(sorted(open_heads), ["feat/x", "feat/x-1"])
+
+    def test_recut_skips_init_when_the_local_stack_already_matches(self):
+        self.stacked()
+        self.seed_github_stack(["feat/x-1", "feat/x-mid", "feat/x"], submit_stack=8)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.stack_calls()
+        self.assertIn("unstack 7", calls)
+        self.assertFalse([c for c in calls if c.startswith("init")])
+        self.assertIn("submit --auto --open", calls)
+        self.assertEqual(self.pulls()[1]["state"], "closed")
+        self.assertEqual(self.lc_calls()[0], ["attach", self.item, "stack", "https://github.com/o/r/stack/8", "--replace"])
 
     def test_unchanged_layer_set_does_not_unstack(self):
         self.stacked()
