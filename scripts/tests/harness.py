@@ -33,6 +33,8 @@ if args[0] == "stack":
         sys.exit(cfg.get("rebase_rc", 0))
     elif sub == "unstack":
         cfg.pop("github", None)
+        if cfg.get("unstack_clears_local"):
+            cfg["branches"] = []
         json.dump(state, open(state_path, "w"))
     elif sub == "init":
         pass
