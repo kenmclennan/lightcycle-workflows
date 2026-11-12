@@ -331,6 +331,49 @@ def stack_branches(branch):
     return names
 
 
+def worktree_branches():
+    out = git("worktree", "list", "--porcelain", check=False)
+    return {
+        line[len("branch refs/heads/"):]
+        for line in out.splitlines()
+        if line.startswith("branch refs/heads/")
+    }
+
+
+def sync_layers(names, branch):
+    notes = []
+    held = worktree_branches()
+    for layer in names:
+        if layer == branch:
+            continue
+        remote = git("rev-parse", "--verify", "-q", f"origin/{layer}", check=False)
+        local = git("rev-parse", "--verify", "-q", f"refs/heads/{layer}", check=False)
+        if not remote or not local or remote == local:
+            continue
+        if layer in held:
+            notes.append(f"held back layer {layer}: checked out in another worktree")
+            continue
+        ahead = git("rev-list", f"origin/{layer}..{layer}", check=False).split()
+        unique = {
+            line[2:].strip()
+            for line in git("cherry", f"origin/{layer}", layer, check=False).splitlines()
+            if line.startswith("+")
+        }
+        seen = set(git("reflog", "show", f"origin/{layer}", "--format=%H", check=False).split())
+        lost = [sha for sha in ahead if sha in unique and sha not in seen]
+        if lost:
+            notes.append(
+                f"held back layer {layer}: local commit {lost[0][:8]} is not on the remote"
+            )
+            continue
+        moved = run(["git", "update-ref", f"refs/heads/{layer}", remote, local], check=False)
+        if moved.returncode != 0:
+            notes.append(f"held back layer {layer}: its ref moved while syncing")
+            continue
+        notes.append(f"reset layer {layer} {local} to remote {remote}")
+    return notes
+
+
 STACK_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/stack/\d+")
 STACKS_DISABLED = 9
 
@@ -550,6 +593,7 @@ def main():
             return {"outcome": "too-big", "note": "Re-cut: " + "; ".join(over)}
     fallback = ""
     if names:
+        notes.extend(sync_layers(names, branch))
         conflict = rebase_stack(valid)
         if conflict:
             return conflict

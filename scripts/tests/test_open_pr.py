@@ -384,6 +384,83 @@ class StackedOpenPrTest(ScriptCase):
     def pulls(self):
         return self.read_gh_state()["pulls"]
 
+    def push_stack(self):
+        self.stacked()
+        sh("git", "push", "origin", "feat/x-1", "feat/x", cwd=self.work)
+
+    def other_clone(self):
+        other = self.root / "other"
+        sh("git", "clone", str(self.origin), str(other))
+        sh("git", "config", "user.name", "Tester", cwd=other)
+        sh("git", "config", "user.email", "t@example.com", cwd=other)
+        sh("git", "checkout", "feat/x-1", cwd=other)
+        return other
+
+    def rev(self, ref):
+        return sh("git", "rev-parse", ref, cwd=self.work).stdout.strip()
+
+    def test_stale_lower_layer_is_reset_to_the_rewritten_remote(self):
+        self.push_stack()
+        stale = self.rev("feat/x-1")
+        other = self.other_clone()
+        (other / "model.txt").write_text("m2\n")
+        sh("git", "add", "model.txt", cwd=other)
+        sh("git", "commit", "--amend", "-m", "feat(model): rewrite the model", cwd=other)
+        sh("git", "push", "--force", "origin", "feat/x-1", cwd=other)
+        sh("git", "fetch", "origin", cwd=self.work)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        note = json.loads(result.stdout)["note"]
+        self.assertEqual(self.rev("feat/x-1"), self.rev("origin/feat/x-1"))
+        self.assertNotEqual(self.rev("feat/x-1"), stale)
+        self.assertIn(f"reset layer feat/x-1 {stale}", note)
+
+    def test_remote_ahead_lower_layer_is_fast_forwarded(self):
+        self.push_stack()
+        other = self.other_clone()
+        (other / "more.txt").write_text("more\n")
+        sh("git", "add", "more.txt", cwd=other)
+        sh("git", "commit", "-m", "feat(model): extend the model", cwd=other)
+        sh("git", "push", "origin", "feat/x-1", cwd=other)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.rev("feat/x-1"), self.rev("origin/feat/x-1"))
+        self.assertIn("reset layer feat/x-1", json.loads(result.stdout)["note"])
+
+    def test_local_only_layer_commit_is_never_reset(self):
+        self.push_stack()
+        sh("git", "checkout", "feat/x-1", cwd=self.work)
+        self.commit("local.txt", "l\n", "feat(model): local only")
+        sh("git", "checkout", "feat/x", cwd=self.work)
+        local = self.rev("feat/x-1")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.rev("feat/x-1"), local)
+        self.assertNotEqual(self.rev("origin/feat/x-1"), local)
+        self.assertIn("held back layer feat/x-1", json.loads(result.stdout)["note"])
+
+    def test_layer_checked_out_in_another_worktree_is_skipped(self):
+        self.push_stack()
+        other = self.other_clone()
+        (other / "more.txt").write_text("more\n")
+        sh("git", "add", "more.txt", cwd=other)
+        sh("git", "commit", "-m", "feat(model): extend the model", cwd=other)
+        sh("git", "push", "origin", "feat/x-1", cwd=other)
+        held = self.rev("feat/x-1")
+        sh("git", "worktree", "add", str(self.root / "held"), "feat/x-1", cwd=self.work)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.rev("feat/x-1"), held)
+        self.assertIn("checked out in another worktree", json.loads(result.stdout)["note"])
+
     def test_stack_submits_and_attaches_the_stack_and_the_top_pr(self):
         self.stacked()
 
