@@ -417,6 +417,44 @@ class StackedOpenPrTest(ScriptCase):
         self.assertNotEqual(self.rev("feat/x-1"), stale)
         self.assertIn(f"reset layer feat/x-1 {stale}", note)
 
+    def two_commit_layer(self):
+        self.stacked()
+        sh("git", "checkout", "feat/x-1", cwd=self.work)
+        self.commit("more.txt", "more\n", "feat(model): extend the model")
+        sh("git", "checkout", "feat/x", cwd=self.work)
+        sh("git", "push", "origin", "feat/x-1", "feat/x", cwd=self.work)
+
+    def test_two_commit_lower_layer_rewritten_on_the_remote_is_reset(self):
+        self.two_commit_layer()
+        stale = self.rev("feat/x-1")
+        other = self.other_clone()
+        sh("git", "reset", "--hard", "HEAD~2", cwd=other)
+        for name in ("a.txt", "b.txt"):
+            (other / name).write_text(name)
+            sh("git", "add", name, cwd=other)
+            sh("git", "commit", "-m", f"feat(model): rewrite {name}", cwd=other)
+        sh("git", "push", "--force", "origin", "feat/x-1", cwd=other)
+        sh("git", "fetch", "origin", cwd=self.work)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.rev("feat/x-1"), self.rev("origin/feat/x-1"))
+        self.assertIn(f"reset layer feat/x-1 {stale}", json.loads(result.stdout)["note"])
+
+    def test_local_only_commit_on_a_two_commit_layer_is_held_back(self):
+        self.two_commit_layer()
+        sh("git", "checkout", "feat/x-1", cwd=self.work)
+        self.commit("local.txt", "l\n", "feat(model): local only")
+        sh("git", "checkout", "feat/x", cwd=self.work)
+        local = self.rev("feat/x-1")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.rev("feat/x-1"), local)
+        self.assertIn("held back layer feat/x-1", json.loads(result.stdout)["note"])
+
     def test_remote_ahead_lower_layer_is_fast_forwarded(self):
         self.push_stack()
         other = self.other_clone()
