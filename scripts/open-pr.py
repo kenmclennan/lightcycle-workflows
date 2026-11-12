@@ -340,6 +340,10 @@ def worktree_branches():
     }
 
 
+def was_ancestor(sha, tip):
+    return run(["git", "merge-base", "--is-ancestor", sha, tip], check=False).returncode == 0
+
+
 def sync_layers(names, branch):
     notes = []
     held = worktree_branches()
@@ -359,8 +363,12 @@ def sync_layers(names, branch):
             for line in git("cherry", f"origin/{layer}", layer, check=False).splitlines()
             if line.startswith("+")
         }
-        seen = set(git("reflog", "show", f"origin/{layer}", "--format=%H", check=False).split())
-        lost = [sha for sha in ahead if sha in unique and sha not in seen]
+        seen = git("reflog", "show", f"origin/{layer}", "--format=%H", check=False).split()
+        lost = [
+            sha
+            for sha in ahead
+            if sha in unique and not any(was_ancestor(sha, tip) for tip in seen)
+        ]
         if lost:
             notes.append(
                 f"held back layer {layer}: local commit {lost[0][:8]} is not on the remote"
