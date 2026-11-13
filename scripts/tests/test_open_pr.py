@@ -885,6 +885,30 @@ class SizeCheckTest(ScriptCase):
 
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
 
+    def test_a_lower_layer_lagging_its_remote_head_is_measured_after_the_sync(self):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n" * 10, "feat(model): add the model")
+        stale = sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+        sh("git", "checkout", self.base_branch, cwd=self.work)
+        self.commit("drift.txt", "d\n" * 500, "chore: trunk drift")
+        sh("git", "push", "origin", self.base_branch, cwd=self.work)
+        sh("git", "checkout", "-b", "restacked", "feat/x-1", cwd=self.work)
+        sh("git", "rebase", self.base_branch, cwd=self.work)
+        sh("git", "push", "origin", "restacked:feat/x-1", cwd=self.work)
+        self.commit("caller.txt", "c\n", "feat(caller): use the model")
+        sh("git", "branch", "-M", "feat/x", cwd=self.work)
+        sh("git", "fetch", "origin", cwd=self.work)
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+        self.assertEqual(sh("git", "rev-parse", "feat/x-1", cwd=self.work).stdout.strip(), stale)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
     def test_one_pr_over_the_limit_is_refused_unless_reasons_say_irreducible(self):
         self.one_pr(500, "Decision: one-pr\nReasons: one seam")
 
