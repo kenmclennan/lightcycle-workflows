@@ -595,13 +595,14 @@ def main():
 
     delivery = read_delivery(step)
     names = stack_branches(branch)
+    if names:
+        notes.extend(sync_layers(names, branch))
     if "too-big" in valid and delivery:
         over = oversized(names, delivery, base_ref())
         if over:
             return {"outcome": "too-big", "note": "Re-cut: " + "; ".join(over)}
     fallback = ""
     if names:
-        notes.extend(sync_layers(names, branch))
         conflict = rebase_stack(valid)
         if conflict:
             return conflict
