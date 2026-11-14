@@ -118,6 +118,15 @@ def dirty_paths():
     return ", ".join(line[3:] for line in dirty.splitlines())
 
 
+def fold_digest(item):
+    paths = [line[3:] for line in run(["git", "status", "--porcelain"]).stdout.splitlines()]
+    if len(paths) != 1 or os.path.basename(paths[0]) != f"{item}-digest.md":
+        return ""
+    run(["git", "add", "--", paths[0]])
+    run(["git", "commit", "--amend", "--no-edit"])
+    return f"amended the uncommitted digest {paths[0]} into the spec commit"
+
+
 def sync_to_remote(branch):
     remote = git("rev-parse", "--verify", "-q", f"origin/{branch}", check=False)
     if not remote:
@@ -587,6 +596,10 @@ def main():
     owner, repo = owner_repo()
     git("fetch", "origin")
     notes = [sync_to_remote(branch)]
+    folded = fold_digest(item)
+    if folded:
+        print(folded, file=sys.stderr)
+        notes.append(folded)
     paths = dirty_paths()
     if paths:
         raise Fail(
