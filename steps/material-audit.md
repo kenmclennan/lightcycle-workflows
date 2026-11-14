@@ -22,6 +22,8 @@ Setup. Run `lc guidance-dir` for the path of the entry files. Run `lc guidance -
 
 Scope. Give one verdict per `stable` entry and cite the evidence you read: the exact command and what it returned. `draft` entries are not judged. `deprecated` entries get the reversal check below. Read each entry file for its `applies-to`, `covers` and body, since the report rows do not carry them.
 
+Last change. Before giving a rescope or retire verdict, find the entry's last change with `git log -1 --format=%ad -- <file>` in the guidance dir, never from its `verified:` field, which is not a change date. Judge criterion 4 on deliveries since that date (`lc guidance --json --since <that date>`), not over the whole window. If the entry changed inside the audit window, say so in the finding. Where an earlier audit raised the same verdict, name the commit that addressed it, or state that `git log` shows none.
+
 Criteria. Apply all seven to every stable entry.
 
 1. Wrong? Check the entry's claims against the code, the tools and the steps it applies to. Run a command where a claim can be measured. Verdict: rewrite.
