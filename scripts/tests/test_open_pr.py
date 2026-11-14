@@ -306,6 +306,31 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(self.gh_calls(), [])
         self.assertEqual(self.lc_calls(), [])
 
+    def test_uncommitted_digest_alone_is_amended_into_the_commit(self):
+        self.feature_branch()
+        (self.work / f"{self.item}-digest.md").write_text("late digest\n")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("amended the uncommitted digest", result.stderr)
+        self.assertEqual(
+            sh("git", "show", f"HEAD:{self.item}-digest.md", cwd=self.work).stdout, "late digest\n"
+        )
+        self.assertEqual(sh("git", "status", "--porcelain", cwd=self.work).stdout, "")
+        self.assertEqual(sh("git", "rev-list", "--count", "origin/main..HEAD", cwd=self.work).stdout.strip(), "1")
+
+    def test_digest_with_another_uncommitted_path_is_refused(self):
+        self.feature_branch()
+        (self.work / f"{self.item}-digest.md").write_text("late digest\n")
+        (self.work / "scratch.txt").write_text("dirty\n")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("uncommitted changes", result.stderr)
+        self.assertEqual(self.gh_calls(), [])
+
     def test_uncommitted_edit_refuses_to_update_an_open_pr(self):
         self.feature_branch()
         self.assertEqual(self.run_script("open-pr.py").returncode, 0)
