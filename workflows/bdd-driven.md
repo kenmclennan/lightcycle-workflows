@@ -250,10 +250,15 @@ edges:
   feature-review-ci         reviewed
   amend-review-ci           reviewed
   spec-handle-feedback      done
+  spec-handle-feedback      rework
   nochange-handle-feedback  done
+  nochange-handle-feedback  rework
   feature-handle-feedback   done
+  feature-handle-feedback   rework
   code-handle-feedback      done
+  code-handle-feedback      rework
   amend-handle-feedback     done
+  amend-handle-feedback     rework
   review-conflict           resolved           code-open-pr         primary
 
 hooks:
@@ -266,15 +271,19 @@ hooks:
   pr_close              feature-await-merge   abandoned
   pr_close              code-await-merge      abandoned
   pr_feedback           spec-await-merge      spec-handle-feedback
+  pr_feedback_route     spec-handle-feedback  rework  changes
   pr_head_moved         spec-await-merge      head-moved
   pr_feedback           nochange-await-merge  nochange-handle-feedback
+  pr_feedback_route     nochange-handle-feedback  rework  changes
   pr_head_moved         nochange-await-merge  head-moved
   pr_feedback           feature-await-merge   feature-handle-feedback
+  pr_feedback_route     feature-handle-feedback  rework  changes
   pr_head_moved         feature-await-merge   head-moved
   pr_conflict           feature-await-merge   conflicted
   pr_conflict_cap       feature-await-merge   3
   pr_conflict_escalate  feature-await-merge   gave-up
   pr_feedback           code-await-merge      code-handle-feedback
+  pr_feedback_route     code-handle-feedback  rework  changes
   pr_conflict           code-await-merge      conflicted
   pr_conflict_cap       code-await-merge      3
   pr_conflict_escalate  code-await-merge      gave-up
@@ -301,6 +310,7 @@ hooks:
   pr_merge              amend-await-merge     scenario-merged
   pr_close              amend-await-merge     abandoned
   pr_feedback           amend-await-merge     amend-handle-feedback
+  pr_feedback_route     amend-handle-feedback  rework  changes
   pr_head_moved         amend-await-merge     head-moved
   pr_conflict           amend-await-merge     conflicted
   pr_conflict_cap       amend-await-merge     3
