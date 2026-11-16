@@ -139,8 +139,11 @@ edges:
   resolve-conflict          escalate       review-conflict
   review-ci                 reviewed
   spec-handle-feedback      done
+  spec-handle-feedback      rework
   nochange-handle-feedback  done
+  nochange-handle-feedback  rework
   code-handle-feedback      done
+  code-handle-feedback      rework
   review-conflict           resolved       code-open-pr      primary
 
 hooks:
@@ -151,10 +154,13 @@ hooks:
   pr_close              nochange-await-merge  abandoned
   pr_close              code-await-merge      abandoned
   pr_feedback           spec-await-merge      spec-handle-feedback
+  pr_feedback_route     spec-handle-feedback  rework  changes
   pr_head_moved         spec-await-merge      head-moved
   pr_feedback           nochange-await-merge  nochange-handle-feedback
+  pr_feedback_route     nochange-handle-feedback  rework  changes
   pr_head_moved         nochange-await-merge  head-moved
   pr_feedback           code-await-merge      code-handle-feedback
+  pr_feedback_route     code-handle-feedback  rework  changes
   pr_conflict           code-await-merge      conflicted
   pr_conflict_cap       code-await-merge      3
   pr_conflict_escalate  code-await-merge      gave-up

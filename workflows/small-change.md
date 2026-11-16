@@ -78,12 +78,14 @@ edges:
   review-scope      rescoped       scope-and-code
   review-ci         reviewed
   handle-feedback   done
+  handle-feedback   rework
   review-conflict   resolved       open-pr           primary
 
 hooks:
   pr_merge              await-merge  merged
   pr_close              await-merge  abandoned
   pr_feedback           await-merge  handle-feedback
+  pr_feedback_route     handle-feedback  rework  changes
   pr_conflict           await-merge  conflicted
   pr_conflict_cap       await-merge  3
   pr_conflict_escalate  await-merge  gave-up
