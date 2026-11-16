@@ -227,3 +227,58 @@ class ScriptCase(unittest.TestCase):
             capture_output=True,
             text=True,
         )
+
+
+HANG_GIT = """#!%(python)s
+import os, subprocess, sys, time
+stub = os.environ["STUB_DIR"]
+with open(stub + "/git-calls.log", "a") as log:
+    log.write(" ".join(sys.argv[1:]) + "\\n")
+if os.environ.get("STUB_GRANDCHILD"):
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    with open(stub + "/grandchild.pid", "w") as pid:
+        pid.write(str(child.pid))
+time.sleep(60)
+""" % {"python": sys.executable}
+
+HANG_GH = HANG_GIT.replace("git-calls.log", "gh-calls.log")
+
+LIMITED = (
+    "import runpy, sys; sys.path.insert(0, %r); import gitproc; "
+    "gitproc.LOCAL_LIMIT = gitproc.NETWORK_LIMIT = gitproc.PUSH_LIMIT = gitproc.GH_LIMIT = 2; "
+    "gitproc.RETRY_PAUSE = 0; sys.argv = [sys.argv[1]]; "
+    "runpy.run_path(sys.argv[0], run_name='__main__')"
+)
+
+
+class HangCase(ScriptCase):
+    def hang(self, name, grandchild=False):
+        body = HANG_GIT if name == "git" else HANG_GH
+        path = self.bin / name
+        path.write_text(body)
+        path.chmod(0o755)
+        self.grandchild = grandchild
+
+    def run_limited(self, script, extra_env=None):
+        env = dict(os.environ)
+        env.update(extra_env or {})
+        env["PATH"] = f"{self.bin}{os.pathsep}{env['PATH']}"
+        env["STUB_DIR"] = str(self.stub)
+        env["LC_STEP"] = self.step
+        env["LC_ITEM"] = self.item
+        env["LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"] = "400"
+        if getattr(self, "grandchild", False):
+            env["STUB_GRANDCHILD"] = "1"
+        return subprocess.run(
+            [sys.executable, "-c", LIMITED % str(SCRIPTS), str(SCRIPTS / script)],
+            cwd=self.work,
+            env=env,
+            input="{}",
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+    def calls(self, name):
+        path = self.stub / f"{name}-calls.log"
+        return path.read_text().splitlines() if path.exists() else []

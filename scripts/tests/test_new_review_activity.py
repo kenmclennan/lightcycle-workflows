@@ -5,14 +5,16 @@ import sys
 import unittest
 from datetime import datetime
 
-from tests.harness import SCRIPTS, ScriptCase
+from tests.harness import SCRIPTS, HangCase, ScriptCase
 
 TODAY = datetime.now().astimezone().date().isoformat()
 THROUGH = "2026-10-19"
 
 LC = """#!%(python)s
 import os, sys
+import time
 args = sys.argv[1:]
+time.sleep(float(os.environ.get("T_SLEEP", "0")))
 with open(os.environ["T_LOG"], "a") as log:
     log.write(" ".join(args) + "\\n")
 if args[0] == "review-yield":
@@ -136,6 +138,27 @@ class NewReviewActivityTest(ScriptCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
         self.assertIn("engine too old", result.stderr)
+
+
+class NewReviewActivityLimitTest(HangCase):
+    def test_an_lc_call_is_not_cut_short_by_the_git_and_gh_limits(self):
+        path = self.bin / "lc"
+        path.write_text(LC)
+        path.chmod(0o755)
+
+        result = self.run_limited(
+            "new-review-activity.py",
+            {
+                "T_SLEEP": "3",
+                "T_LOG": str(self.root / "lc.log"),
+                "T_YIELD": json.dumps(report()),
+                "LC_SCHEDULE_PARAM_CATCH_RATE_FLOOR": "0.5",
+                "LC_SCHEDULE_PARAM_REPEAT_MIN": "3",
+            },
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("review-yield", (self.root / "lc.log").read_text())
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from tests.harness import ScriptCase, sh
+from tests.harness import HangCase, ScriptCase, sh
 
 
 class CleanupTest(ScriptCase):
@@ -43,6 +43,18 @@ class CleanupTest(ScriptCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+
+class CleanupTimeoutTest(HangCase):
+    def test_a_hung_git_status_exits_one_with_the_cause(self):
+        self.hang("git", grandchild=True)
+
+        result = self.run_limited("cleanup.py")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("timed out", result.stderr)
+        self.assertEqual(len(self.calls("git")), 1)
 
 
 if __name__ == "__main__":
