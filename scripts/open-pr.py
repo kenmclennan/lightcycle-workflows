@@ -2,11 +2,12 @@
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 import time
 from datetime import datetime
+
+import gitproc
 
 BODY_OPEN = "<!-- lc:body -->"
 BODY_CLOSE = "<!-- /lc:body -->"
@@ -20,8 +21,11 @@ class Fail(Exception):
     pass
 
 
-def run(args, check=True):
-    proc = subprocess.run(args, capture_output=True, text=True)
+def run(args, check=True, retry=True):
+    try:
+        proc = gitproc.run(args, retry=retry)
+    except gitproc.GitTimeout as error:
+        raise Fail(f"{error.cmd} timed out after {error.limit}s ({error.attempts} attempts)")
     if check and proc.returncode != 0:
         detail = (proc.stderr or proc.stdout).strip()
         raise Fail(f"{' '.join(args)} failed ({proc.returncode}): {detail}")
@@ -94,7 +98,7 @@ def gh_write(path, fields, method=None):
                 args += ["-F", f"body=@{handle.name}"]
             else:
                 args += ["-f", f"{key}={value}"]
-        return json.loads(run(args).stdout or "{}")
+        return json.loads(run(args, retry=False).stdout or "{}")
     finally:
         for name in tmp:
             os.unlink(name)

@@ -4,7 +4,7 @@ import subprocess
 import sys
 import unittest
 
-from tests.harness import SCRIPTS, ScriptCase
+from tests.harness import SCRIPTS, HangCase, ScriptCase
 
 PIN = "a" * 40
 MAIN = "b" * 40
@@ -112,6 +112,19 @@ class PinStaleTest(ScriptCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
+
+
+class PinStaleTimeoutTest(HangCase):
+    def test_a_hung_gh_dies_naming_the_command_after_two_attempts(self):
+        self.hang("gh", grandchild=True)
+
+        result = self.run_limited("pin-stale.py", {"LC_SCHEDULE_PARAM_REPO": "o/r"})
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("timed out", result.stderr)
+        self.assertIn("gh", result.stderr)
+        self.assertEqual(len(self.calls("gh")), 2)
 
 
 if __name__ == "__main__":

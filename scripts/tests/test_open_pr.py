@@ -2,10 +2,11 @@ import json
 import os
 import importlib.util
 import subprocess
+import sys
 import unittest
 from unittest import mock
 
-from tests.harness import SCRIPTS, ScriptCase, sh
+from tests.harness import SCRIPTS, HangCase, ScriptCase, sh
 
 
 class OpenPrTest(ScriptCase):
@@ -961,8 +962,35 @@ class SizeCheckTest(ScriptCase):
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
 
 
+class OpenPrTimeoutTest(HangCase):
+    def test_a_hung_git_fails_the_step_naming_the_command(self):
+        self.feature_branch()
+        self.hang("git", grandchild=True)
+
+        result = self.run_limited("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("timed out", result.stderr)
+        self.assertIn("git", result.stderr)
+
+    def test_a_hung_gh_write_is_not_retried(self):
+        self.feature_branch()
+        sh("git", "push", "-u", "origin", "feat/x", cwd=self.work)
+        self.hang("gh")
+
+        result = self.run_limited("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("timed out", result.stderr)
+        writes = [c for c in self.calls("gh") if "-f" in c or "-F" in c or "-X" in c]
+        self.assertLessEqual(len(writes), 1)
+
+
 class StackLockTest(ScriptCase):
     def load(self):
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
         spec = importlib.util.spec_from_file_location("open_pr_under_test", SCRIPTS / "open-pr.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)

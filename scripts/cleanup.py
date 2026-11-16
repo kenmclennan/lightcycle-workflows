@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 import json
-import subprocess
 import sys
 
-proc = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+import gitproc
+
+try:
+    proc = gitproc.run(["git", "status", "--porcelain"])
+except gitproc.GitTimeout as error:
+    print(f"git status failed: {error}", file=sys.stderr)
+    sys.exit(1)
 if proc.returncode != 0:
     print(f"git status failed: {proc.stderr.strip()}", file=sys.stderr)
     sys.exit(1)

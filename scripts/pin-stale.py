@@ -3,8 +3,9 @@ import base64
 import json
 import os
 import re
-import subprocess
 import sys
+
+import gitproc
 
 TITLE = "bump the engine pin (%d commits behind)"
 OPEN_PREFIX = "bump the engine pin"
@@ -25,7 +26,10 @@ def param(key, default=None):
 
 
 def run(cmd):
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        proc = gitproc.run(cmd)
+    except gitproc.GitTimeout as error:
+        die(str(error))
     if proc.returncode != 0:
         die("%s failed (exit %d): %s" % (cmd[0], proc.returncode, proc.stderr.strip()))
     return proc.stdout
