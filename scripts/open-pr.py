@@ -268,9 +268,21 @@ def close_rework_loop(owner, repo, num):
     return posted
 
 
+def refuse_merge_commits(base, tip="HEAD"):
+    merges = git("rev-list", "--merges", f"{base}..{tip}", check=False).split()
+    if merges:
+        raise Fail(
+            f"{tip} holds merge commit(s) {', '.join(merges)} ahead of {base}; a rebase would drop "
+            "them and leave nothing to open a PR from. The squash most likely amended an upstream "
+            "commit. Find the pre-amend commit with `git reflog`, run `git reset --keep <sha>` to "
+            "it, then re-run."
+        )
+
+
 def rebase_onto_base(valid_outcomes):
     git("fetch", "origin")
     base = base_ref()
+    refuse_merge_commits(base)
     proc = run(["git", "rebase", base], check=False)
     if proc.returncode == 0:
         return None
@@ -399,8 +411,11 @@ STACK_URL = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/stack/\d+")
 STACKS_DISABLED = 9
 
 
-def rebase_stack(valid_outcomes):
+def rebase_stack(valid_outcomes, names=()):
     git("fetch", "origin")
+    base = base_ref()
+    for layer in names:
+        refuse_merge_commits(base, layer)
     proc = gh_stack("rebase", check=False)
     if proc.returncode == 0:
         return None
@@ -620,7 +635,7 @@ def main():
             return {"outcome": "too-big", "note": "Re-cut: " + "; ".join(over)}
     fallback = ""
     if names:
-        conflict = rebase_stack(valid)
+        conflict = rebase_stack(valid, names)
         if conflict:
             return conflict
         git("checkout", branch)
