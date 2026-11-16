@@ -150,6 +150,33 @@ class OpenPrTest(ScriptCase):
         self.assertIn("origin/main", result.stderr)
         self.assertIn("refused by test", result.stderr)
 
+    def test_branch_tip_amended_from_a_base_merge_commit_is_refused(self):
+        sh("git", "checkout", "-b", "side", cwd=self.work)
+        self.commit("side.txt", "side\n", "chore: side work")
+        sh("git", "checkout", "main", cwd=self.work)
+        self.commit("main.txt", "main\n", "chore: main work")
+        sh("git", "merge", "--no-ff", "side", "-m", "Merge pull request #88", cwd=self.work)
+        sh("git", "push", "origin", "main", cwd=self.work)
+        merge = sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        (self.work / "feature.txt").write_text("one\n")
+        sh("git", "add", "feature.txt", cwd=self.work)
+        sh("git", "commit", "--amend", "-m", "feat(x): add the thing", cwd=self.work)
+        amended = sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+        self.assertEqual(sh("git", "rev-list", "--merges", "origin/main..HEAD", cwd=self.work).stdout.split(), [amended])
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn(amended, result.stderr)
+        self.assertIn("git reflog", result.stderr)
+        self.assertIn("git reset --keep", result.stderr)
+        self.assertNotEqual(amended, merge)
+        self.assertEqual(sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip(), amended)
+        self.assertEqual(sh("git", "status", "--porcelain", cwd=self.work).stdout, "")
+        self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
+
     def test_origin_default_moved_after_clone_is_followed(self):
         self.feature_branch()
         sh("git", "branch", "-m", "main", "trunk", cwd=self.origin)
