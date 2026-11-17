@@ -26,6 +26,8 @@ flowchart TD
         WCI -->|review-rework| WC
         WCI -.->|"ci_failed_cap: ci-failed"| RCI{{"review-ci"}}
         WCI -.->|"review_rounds_cap: review-rework"| RCI
+        CD -->|rework| WC
+        CD -.->|"review_rounds_cap: rework"| RCI
         RC -->|rejected| WC
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| WC
@@ -56,7 +58,7 @@ flowchart TD
 | `spec-open-pr` / `spec-await-merge` | script / human | Opens the spec PR; the human reviews and merges it (the review gate). |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |
-| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria (the bundle's own, `shared/layer-criteria.md`, not a guidance entry), cuts the layers, and records its reasons. |
+| `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria (the bundle's own, `shared/layer-criteria.md`, not a guidance entry), cuts the layers, running the repo's tests and gates on each as it is cut, and closes `rework` to the coder with the failures named when one fails (the only source of that edge, capped by `review_rounds_cap`, which escalates to `review-ci`), and records its reasons. |
 | `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
 | `code-open-pr` | script | Rebases on the base branch, pushes, opens the code PR; opens a stack with `gh stack submit --auto --open` when the worktree holds one, falling back to one PR on exit 9. Before pushing anything it measures each layer's diff and closes `too-big`, routing back to `cut-delivery` with a `Re-cut:` line, when a layer is over the `layer-lines-limit` config key (required, no default) and not marked `irreducible`. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `write-code` (each capped, then `review-ci`). |
