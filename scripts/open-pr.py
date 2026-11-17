@@ -448,6 +448,7 @@ def github_layers(owner, repo, stack_url):
         entries = json.loads(proc.stdout)["pull_requests"]
         return {
             "number": found.group(3),
+            "merged": [e["head"]["ref"] for e in entries if e.get("merged_at")],
             "layers": [
                 {"number": e["number"], "head": e["head"]["ref"], "state": e.get("state")}
                 for e in entries
@@ -467,6 +468,15 @@ def local_stack_names():
     except ValueError:
         return []
     return [b.get("name") for b in (data.get("branches") or []) if isinstance(b, dict)]
+
+
+def drop_merged(owner, repo, names, recorded_stack):
+    pairs = list(enumerate(names, start=1))
+    current = github_layers(owner, repo, recorded_stack)
+    if not current:
+        return pairs
+    merged = set(current["merged"])
+    return [(index, name) for index, name in pairs if name not in merged or index == len(pairs)]
 
 
 def recut_stack(owner, repo, names, recorded_stack):
@@ -506,16 +516,16 @@ def submit_stack(branch):
     return found.group(0)
 
 
-def open_stack(owner, repo, item, quote, stage, names, delivery, stack_url, recorded, replace=False):
+def open_stack(owner, repo, item, quote, stage, layers, delivery, stack_url, recorded, replace=False):
     top_url = None
-    for index, name in enumerate(names, start=1):
+    for position, (index, name) in enumerate(layers, start=1):
         pr = find_pr(owner, repo, name)
         if not pr:
             raise Fail(f"gh stack submit --auto --open left no open PR for layer {index} ({name})")
         lines = []
         if delivery and delivery["layers"].get(index):
             lines.append(f"Layer {index}: {delivery['layers'][index]}")
-        top = index == len(names)
+        top = position == len(layers)
         if top and delivery:
             lines = delivery_lines(delivery) + lines
         resync_existing(
@@ -556,23 +566,54 @@ def marked_irreducible(text):
     return bool(re.search(r"\birreducible\b", text or "", re.IGNORECASE))
 
 
-def oversized(names, delivery, base):
+def oversized(layers, delivery, base, only=None):
     limit = layer_lines_limit()
     over = []
-    if names:
-        for index, name in enumerate(names, start=1):
-            lower = base if index == 1 else names[index - 2]
+    if layers:
+        for position, (index, name) in enumerate(layers, start=1):
+            lower = base if position == 1 else layers[position - 2][1]
             count = diff_lines(lower, name)
             if count > limit and not marked_irreducible(delivery["layers"].get(index, "")):
-                over.append(f"layer {index} of {len(names)} is {count} lines")
+                over.append(f"layer {position} of {len(layers)} is {count} lines")
     else:
         count = diff_lines(base, "HEAD")
-        if count > limit and not marked_irreducible(delivery["reasons"]):
+        marker = delivery["layers"].get(only, "") if only else ""
+        if count > limit and not marked_irreducible(marker) and not marked_irreducible(delivery["reasons"]):
             over.append(f"the one PR is {count} lines")
     suffix = (
         f", over {LAYER_LINES_LIMIT_KEY} {limit} and not marked irreducible"
     )
     return [item + suffix for item in over]
+
+
+def show_step(step_id):
+    proc = run(["lc", "show", step_id], check=False)
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def repeat_recut(step_id, step, note):
+    if not step.get("stage"):
+        return None
+    seen = {step_id}
+    current = step
+    while True:
+        previous_id = current.get("previous_step")
+        if not previous_id or previous_id in seen:
+            return None
+        seen.add(previous_id)
+        current = show_step(previous_id)
+        if current is None:
+            return None
+        if current.get("stage") == step.get("stage"):
+            if current.get("outcome") == "too-big" and current.get("report") == note:
+                return previous_id, current.get("report")
+            return None
 
 
 def abort_stale_rebase():
@@ -627,12 +668,26 @@ def main():
 
     delivery = read_delivery(step)
     names = stack_branches(branch)
+    layers = drop_merged(owner, repo, names, recorded_stack) if names else []
+    only = layers[0][0] if len(layers) == 1 else None
+    if len(layers) < 2:
+        layers = []
+    names = [name for _, name in layers]
     if names:
         notes.extend(sync_layers(names, branch))
     if "too-big" in valid and delivery:
-        over = oversized(names, delivery, base_ref())
+        over = oversized(layers, delivery, base_ref(), only)
         if over:
-            return {"outcome": "too-big", "note": "Re-cut: " + "; ".join(over)}
+            note = "Re-cut: " + "; ".join(over)
+            repeat = repeat_recut(step_id, step, note)
+            if repeat:
+                raise Fail(
+                    "Re-cut loop: code-open-pr refused with the same figure twice running and "
+                    f"cut-delivery kept the cut. This pass: {note}. Previous pass ({repeat[0]}): "
+                    f"{repeat[1]}. A human must decide whether the cut, the limit or an "
+                    "`irreducible` marker should change."
+                )
+            return {"outcome": "too-big", "note": note}
     fallback = ""
     if names:
         conflict = rebase_stack(valid, names)
@@ -643,7 +698,7 @@ def main():
         stack_url = submit_stack(branch)
         if stack_url:
             url = open_stack(
-                owner, repo, item, quote, stage, names, delivery, stack_url, recorded,
+                owner, repo, item, quote, stage, layers, delivery, stack_url, recorded,
                 replace=dropped is not None,
             )
             if dropped:

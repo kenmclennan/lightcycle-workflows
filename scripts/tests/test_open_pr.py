@@ -988,6 +988,147 @@ class SizeCheckTest(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "done")
 
+    MERGED_DELIVERY = (
+        "Decision: stack\n"
+        "Reasons: three seams\n"
+        "Layer 1: the model\n"
+        "Layer 2: the service\n"
+        "Layer 3: the caller"
+    )
+
+    def merged_stack(self, merged, top_lines, delivery=MERGED_DELIVERY, lookup=True):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("one.txt", "1\n" * 300, "feat(one): layer one")
+        sh("git", "checkout", "-b", "feat/x-2", cwd=self.work)
+        self.commit("two.txt", "2\n" * 300, "feat(two): layer two")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("top.txt", "t\n" * top_lines, "feat(top): layer three")
+        old_two = sh("git", "rev-parse", "feat/x-2", cwd=self.work).stdout.strip()
+        sh("git", "checkout", self.base_branch, cwd=self.work)
+        sh("git", "merge", "--squash", "feat/x-1" if merged == 1 else "feat/x-2", cwd=self.work)
+        sh("git", "commit", "-m", "feat: squash merged layers", cwd=self.work)
+        sh("git", "push", "origin", self.base_branch, cwd=self.work)
+        if merged == 1:
+            sh("git", "checkout", "feat/x-2", cwd=self.work)
+            sh("git", "rebase", "--onto", self.base_branch, "feat/x-1", cwd=self.work)
+            sh("git", "checkout", "feat/x", cwd=self.work)
+            sh("git", "rebase", "--onto", "feat/x-2", old_two, cwd=self.work)
+        else:
+            sh("git", "checkout", "feat/x", cwd=self.work)
+            sh("git", "rebase", "--onto", self.base_branch, old_two, cwd=self.work)
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x-2", "feat/x"]}
+        if lookup:
+            heads = ["feat/x-1", "feat/x-2", "feat/x"]
+            for index, head in enumerate(heads, start=1):
+                pull = {
+                    "number": index, "html_url": f"https://github.com/o/r/pull/{index}",
+                    "title": head, "body": "old", "head": head,
+                    "state": "closed" if index <= merged else "open",
+                }
+                if index <= merged:
+                    pull["merged_at"] = "2026-01-01T00:00:00Z"
+                self.gh_state["pulls"].append(pull)
+            self.gh_state["stack"]["github"] = {"heads": heads}
+        self.write_gh_state()
+        self.lc_show["runs"][0]["stack"] = "https://github.com/o/r/stack/7"
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": delivery}]
+        self.write_lc_show()
+
+    def stack_calls(self):
+        return [c["path"] for c in self.gh_calls() if c["method"] == "STACK"]
+
+    def test_merged_lower_layers_are_not_measured(self):
+        self.merged_stack(2, 222)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        for call in self.stack_calls():
+            self.assertNotIn(call.split()[0], ("unstack", "init", "rebase"))
+
+    def test_a_stack_with_one_merged_layer_keeps_the_rest_measured(self):
+        self.merged_stack(1, 500)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertIn("layer 2 of 2 is 500 lines", out["note"])
+
+    def test_a_merged_layer_keeps_its_original_irreducible_marker(self):
+        delivery = self.MERGED_DELIVERY.replace("Layer 3: the caller", "Layer 3: the caller, irreducible - one schema")
+        self.merged_stack(2, 500, delivery)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
+    def test_stack_lookup_404_keeps_todays_behaviour(self):
+        self.merged_stack(2, 222, lookup=False)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertIn("layer 3 of 3 is 822 lines", out["note"])
+
+    OVER_NOTE = "Re-cut: layer 1 of 2 is 500 lines, over layer-lines-limit 400 and not marked irreducible"
+
+    def earlier_steps(self, previous_report, chain=True):
+        self.lc_show["stage"] = "code-open-pr"
+        self.lc_show["previous_step"] = "LC-1.3" if chain else ""
+        self.write_lc_show()
+        (self.stub / "lc-show-LC-1.3.json").write_text(json.dumps(
+            {"stage": "cut-delivery", "previous_step": "LC-1.2", "outcome": "done"}
+        ))
+        (self.stub / "lc-show-LC-1.2.json").write_text(json.dumps(
+            {"stage": "code-open-pr", "outcome": "too-big", "report": previous_report}
+        ))
+
+    def test_the_same_recut_figure_twice_fails_naming_both(self):
+        self.stacked(500)
+        self.earlier_steps(self.OVER_NOTE)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr.count(self.OVER_NOTE), 2)
+        self.assert_nothing_pushed()
+
+    def test_a_different_recut_figure_still_returns_too_big(self):
+        self.stacked(500)
+        self.earlier_steps(self.OVER_NOTE.replace("500", "700"))
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "too-big")
+
+    def test_a_first_refusal_returns_too_big(self):
+        self.stacked(500)
+        self.earlier_steps(self.OVER_NOTE, chain=False)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "too-big")
+
+    def test_a_broken_chain_returns_too_big(self):
+        self.stacked(500)
+        self.lc_show["stage"] = "code-open-pr"
+        self.lc_show["previous_step"] = "LC-1.3"
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "too-big")
+
 
 class OpenPrTimeoutTest(HangCase):
     def test_a_hung_git_fails_the_step_naming_the_command(self):
