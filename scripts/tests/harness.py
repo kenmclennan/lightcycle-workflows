@@ -82,7 +82,7 @@ if method == "GET" and re.search(r"/stacks/\\d+$", bare):
     if not gh_stack:
         sys.stderr.write("gh: HTTP 404\\n"); sys.exit(1)
     out({"base": {"ref": "main"}, "pull_requests": [
-        {"number": p["number"], "state": p.get("state", "open"), "head": {"ref": p["head"], "sha": "x"}}
+        {"number": p["number"], "state": p.get("state", "open"), "merged_at": p.get("merged_at"), "head": {"ref": p["head"], "sha": "x"}}
         for h in gh_stack["heads"] for p in state["pulls"] if p["head"] == h]})
 elif method == "DELETE":
     out({})
@@ -124,7 +124,8 @@ import json, os, sys
 stub = os.environ["STUB_DIR"]
 args = sys.argv[1:]
 if args[0] == "show":
-    print(open(stub + "/lc-show.json").read())
+    per_id = stub + "/lc-show-" + args[1] + ".json"
+    print(open(per_id if os.path.exists(per_id) else stub + "/lc-show.json").read())
 elif args[0] == "attach":
     with open(stub + "/lc-calls.jsonl", "a") as log:
         log.write(json.dumps(args) + "\\n")
