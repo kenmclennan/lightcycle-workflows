@@ -108,6 +108,7 @@ edges:
   write-code                done           cut-delivery
   write-code                retried        write-code
   cut-delivery              done           code-open-pr
+  cut-delivery              rework         write-code
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
   code-open-pr              too-big        cut-delivery
@@ -174,6 +175,7 @@ hooks:
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
   review_rounds_cap     watch-ci              review-rework  review-ci
+  review_rounds_cap     cut-delivery          rework         review-ci
   mention_token         spec-await-merge      @lc
   mention_token         nochange-await-merge  @lc
   mention_token         code-await-merge      @lc

@@ -196,6 +196,7 @@ edges:
   implement-features        done               cut-delivery
   implement-features        retried            implement-features
   cut-delivery              done               code-open-pr
+  cut-delivery              rework             implement-features
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict
@@ -297,6 +298,7 @@ hooks:
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
   review_rounds_cap     watch-ci              review-rework  review-ci
+  review_rounds_cap     cut-delivery          rework         review-ci
   pr_conflict           feature-poll-ci       conflicted
   pr_conflict           feature-watch-ci      conflicted
   ci_success            feature-poll-ci       succeeded
