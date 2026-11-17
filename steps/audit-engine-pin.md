@@ -27,4 +27,6 @@ Never merge. Never touch any file other than the pin line in the file the Engine
 
 The audit result you report, any `--needs` or `--reason` text you park with, and your reflection are read by a human. They follow the standard below; the ceilings in rules 2 and 3 do not apply to the reflection.
 
+**A rework from a PR comment: the attached comment text is the request.** When `inputs.previous.report` names comments by label (`inline:<id>`, `review:<id>` or `mention:<id>`), the request is the `value` of each `inputs.item` entry whose `name` is `feedback-request` and whose `label` is one of those labels, read in full and unchanged. The one-line gist beside a label is only a label for that comment: where gist and text differ, the text governs, and the gist never narrows, widens or reverses it. Act on every instruction in each text, prohibitions ("do not ...") as much as requests. A named label with no `feedback-request` entry means the text did not arrive: do not work from the gist; `lc set STEP --state waiting --needs "feedback-request <label> is missing from inputs.item" --reason "<what the report named>"` and EXIT. A report that names no such label (a rework from CI, review or a re-cut) leaves this paragraph unused.
+
 @include plain-language
