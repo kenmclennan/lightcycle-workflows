@@ -1,5 +1,6 @@
 ---
 model: sonnet
+principal-output: guidance
 accepts:
   branch: optional
   pr: optional

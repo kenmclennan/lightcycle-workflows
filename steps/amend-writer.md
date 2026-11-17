@@ -1,5 +1,6 @@
 ---
 model: sonnet
+principal-output: spec
 accepts:
   spec: required
   deferred-findings: optional
