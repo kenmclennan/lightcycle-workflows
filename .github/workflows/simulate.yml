@@ -8,7 +8,7 @@ on:
     - cron: "0 6 * * *"
 
 env:
-  ENGINE_PIN: 9cecfc5af21025e1a11a765e28f2a6a56cabbe2f
+  ENGINE_PIN: f3dfd6fa828e82f3c6fca0fc65e01e705de358c3
 
 permissions:
   contents: read

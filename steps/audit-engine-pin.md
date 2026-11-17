@@ -1,5 +1,6 @@
 ---
 model: sonnet
+principal-output: code
 accepts:
   branch: optional
 produces:

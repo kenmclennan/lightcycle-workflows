@@ -13,6 +13,7 @@ steps/*.md             # the steps the workflows reference (shared within this b
 - `source.toml`'s `contract` is the engine contract version these workflows target; the engine refuses to pull a source whose contract it does not support.
 - Workflows and steps are discovered from the files - there is no explicit list to keep in sync.
 - A pulled version is an immutable, self-contained bundle: its workflows reference only the steps in this same bundle.
+- Authoring steps declare a [principal output](docs/principal-output.md), which gates use to pick their callouts.
 
 ## Workflows
 

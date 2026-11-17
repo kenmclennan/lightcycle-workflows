@@ -1,5 +1,6 @@
 ---
 model: sonnet
+principal-output: workflow
 accepts:
   spec: required
   branch: optional
