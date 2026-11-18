@@ -562,6 +562,42 @@ def diff_lines(base, head):
     return total
 
 
+def absorbed_in_base(layer):
+    base = base_ref()
+    fork = git("merge-base", base, layer, check=False)
+    if not fork:
+        return False
+    paths = git("diff", "--name-only", fork, layer, check=False).split()
+    if not paths:
+        return False
+    return run(["git", "diff", "--quiet", layer, base, "--", *paths], check=False).returncode == 0
+
+
+def broken_chain(names, branch):
+    chain = list(names)
+    if chain and chain[-1] != branch:
+        chain.append(branch)
+    for position in range(2, len(chain) + 1):
+        lower, upper = chain[position - 2], chain[position - 1]
+        if not was_ancestor(lower, upper):
+            if absorbed_in_base(lower):
+                continue
+            return f"Re-cut: layer {position} of {len(chain)} is not a child of layer {position - 1}"
+        count = git("rev-list", "--count", f"{lower}..{upper}", check=False)
+        if not count.isdigit() or int(count) < 1:
+            return f"Re-cut: layer {position} of {len(chain)} has no commits of its own"
+    return None
+
+
+def refuse_broken_chain(valid, names, branch):
+    if "too-big" not in valid:
+        return None
+    note = broken_chain(names, branch)
+    if not note:
+        return None
+    return {"outcome": "too-big", "note": note}
+
+
 def marked_irreducible(text):
     return bool(re.search(r"\birreducible\b", text or "", re.IGNORECASE))
 
@@ -675,6 +711,9 @@ def main():
     names = [name for _, name in layers]
     if names:
         notes.extend(sync_layers(names, branch))
+        refused = refuse_broken_chain(valid, names, branch)
+        if refused:
+            return refused
     if "too-big" in valid and delivery:
         over = oversized(layers, delivery, base_ref(), only)
         if over:
@@ -693,6 +732,9 @@ def main():
         conflict = rebase_stack(valid, names)
         if conflict:
             return conflict
+        refused = refuse_broken_chain(valid, names, branch)
+        if refused:
+            return refused
         git("checkout", branch)
         dropped = recut_stack(owner, repo, names, recorded_stack)
         stack_url = submit_stack(branch)
