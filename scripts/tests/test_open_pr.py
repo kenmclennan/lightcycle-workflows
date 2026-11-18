@@ -915,6 +915,61 @@ class SizeCheckTest(ScriptCase):
         self.assertEqual(out["outcome"], "too-big")
         self.assertIn("layer 1 of 2 is 500 lines", out["note"])
 
+    def flatten_remote(self, *remotes):
+        sh("git", "checkout", "-b", "scratch-squash", self.base_branch, cwd=self.work)
+        sh("git", "merge", "--squash", "feat/x", cwd=self.work)
+        sh("git", "commit", "-m", "feat(x): everything in one commit", cwd=self.work)
+        for remote in remotes:
+            sh("git", "push", "origin", f"scratch-squash:{remote}", cwd=self.work)
+        sh("git", "checkout", "feat/x", cwd=self.work)
+        sh("git", "branch", "-D", "scratch-squash", cwd=self.work)
+
+    def rev(self, ref):
+        return sh("git", "rev-parse", ref, cwd=self.work).stdout.strip()
+
+    def two_layers(self, top_lines):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n" * 300, "feat(model): add the model\n\nmodel body")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("caller.txt", "c\n" * top_lines, "feat(caller): use the model\n\ncaller body")
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+    def test_a_flattened_remote_top_does_not_cause_a_recut(self):
+        self.two_layers(300)
+        self.flatten_remote("feat/x")
+        top = self.rev("feat/x")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertEqual(self.rev("feat/x"), top)
+
+    def test_a_flattened_remote_lower_layer_is_held_back_not_measured(self):
+        self.two_layers(300)
+        self.flatten_remote("feat/x-1", "feat/x")
+        lower = self.rev("feat/x-1")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "done")
+        self.assertIn("held back layer feat/x-1", out["note"])
+        self.assertEqual(self.rev("feat/x-1"), lower)
+
+    def test_a_layer_exactly_at_the_limit_is_not_refused_with_a_flattened_remote(self):
+        self.two_layers(400)
+        self.flatten_remote("feat/x")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+
     def test_the_same_layer_marked_irreducible_opens(self):
         self.stacked(500, IRREDUCIBLE_DELIVERY)
 
