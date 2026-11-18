@@ -3,8 +3,10 @@ summary: spec to merged - a co-designed brief becomes a spec PR, then the same i
 when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
 config:
   layer-lines-limit: required
+  layer-check-timeout-seconds: required
 config-example:
   layer-lines-limit: 400
+  layer-check-timeout-seconds: 120
 ---
 
 # Spec-driven
@@ -112,6 +114,7 @@ edges:
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
   code-open-pr              too-big        cut-delivery
+  code-open-pr              layer-red      write-code
   poll-ci                   conflicted     resolve-conflict
   watch-ci                  conflicted     resolve-conflict
   poll-ci                   succeeded      watch-ci
