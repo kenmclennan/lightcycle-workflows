@@ -510,6 +510,14 @@ def close_dropped(owner, repo, dropped, top_url):
         run(["gh", "api", "-X", "DELETE", f"{base}/git/refs/heads/{layer['head']}"], check=False)
 
 
+def clear_recorded_stack(owner, repo, item, old, url):
+    close_dropped(owner, repo, old, url)
+    for layer in old:
+        git("branch", "-D", layer["head"], check=False)
+    run(["lc", "attach", item, "stack", "--clear"])
+    return f"re-cut to one PR: cleared the stack, closed {len(old)} old layer(s)"
+
+
 def submit_stack(branch):
     proc = gh_stack("submit", "--auto", "--open", check=False)
     if proc.returncode == STACKS_DISABLED:
@@ -820,6 +828,11 @@ def main():
             f"the worktree has uncommitted changes in {paths}; commit or discard them, then re-run"
         )
 
+    old_layers = []
+    if recorded_stack:
+        current = github_layers(owner, repo, recorded_stack)
+        old_layers = [layer for layer in (current or {"layers": []})["layers"] if layer["head"] != branch]
+
     delivery = read_delivery(step)
     names = stack_branches(branch)
     layers = drop_merged(owner, repo, names, recorded_stack) if names else []
@@ -902,6 +915,9 @@ def main():
         url = create_pr(owner, repo, branch, item, quote, stage, extra=fallback)
         num = int(url.rstrip("/").rsplit("/", 1)[-1])
         run(["lc", "attach", item, "pr", url])
+
+    if recorded_stack:
+        notes.append(clear_recorded_stack(owner, repo, item, old_layers, url))
 
     replies = close_rework_loop(owner, repo, num)
     notes.append(f"PR {url}")

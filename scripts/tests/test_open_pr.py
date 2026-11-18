@@ -710,6 +710,38 @@ class StackedOpenPrTest(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse([c for c in self.stack_calls() if c.startswith(("unstack", "init"))])
 
+    def test_one_pr_pass_over_a_recorded_stack_clears_it_and_closes_old_layers(self):
+        self.stacked(submit_rc=9)
+        self.seed_github_stack(["feat/x-1", "feat/x-mid", "feat/x"])
+        sh("git", "branch", "feat/x-mid", "feat/x-1", cwd=self.work)
+        self.lc_show["runs"][0]["pr"] = None
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("re-cut to one PR: cleared the stack, closed 2 old layer(s)", json.loads(result.stdout)["note"])
+        states = {p["head"]: p.get("state", "open") for p in self.pulls()}
+        self.assertEqual(states["feat/x-1"], "closed")
+        self.assertEqual(states["feat/x-mid"], "closed")
+        self.assertEqual(states["feat/x"], "open")
+        branches = sh("git", "branch", "--format=%(refname:short)", cwd=self.work).stdout.split()
+        self.assertNotIn("feat/x-1", branches)
+        self.assertNotIn("feat/x-mid", branches)
+        self.assertIn("feat/x", branches)
+        calls = self.lc_calls()
+        self.assertEqual(calls[-1], ["attach", self.item, "stack", "--clear"])
+        self.assertEqual(calls[-2][:3], ["attach", self.item, "pr"])
+
+    def test_one_pr_pass_with_no_recorded_stack_does_not_clear(self):
+        self.stacked(submit_rc=9)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("re-cut to one PR", json.loads(result.stdout)["note"])
+        self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
+
     def test_no_stack_takes_todays_path_and_attaches_no_stack(self):
         self.feature_branch()
         self.lc_show["inputs"]["item"] = [
