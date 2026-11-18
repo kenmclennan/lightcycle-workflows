@@ -871,6 +871,50 @@ class SizeCheckTest(ScriptCase):
         )
         self.assert_nothing_pushed()
 
+    def test_a_layer_that_is_not_a_child_of_the_one_below_is_refused_with_the_chain_note(self):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n" * 500, "feat(model): add the model")
+        sh("git", "checkout", "-b", "feat/x", self.base_branch, cwd=self.work)
+        self.commit("caller.txt", "c\n", "feat(caller): use the model")
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertEqual(out["note"], "Re-cut: layer 2 of 2 is not a child of layer 1")
+        self.assertNotIn("lines", out["note"])
+        self.assert_nothing_pushed()
+
+    def test_a_layer_with_no_commits_of_its_own_is_refused(self):
+        sh("git", "checkout", "-b", "feat/x-1", cwd=self.work)
+        self.commit("model.txt", "m\n", "feat(model): add the model")
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.gh_state["stack"] = {"branches": ["feat/x-1", "feat/x"]}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertEqual(out["note"], "Re-cut: layer 2 of 2 has no commits of its own")
+        self.assert_nothing_pushed()
+
+    def test_an_intact_chain_reaches_the_size_check(self):
+        self.stacked(500)
+
+        out = json.loads(self.run_script("open-pr.py").stdout)
+
+        self.assertEqual(out["outcome"], "too-big")
+        self.assertIn("layer 1 of 2 is 500 lines", out["note"])
+
     def test_the_same_layer_marked_irreducible_opens(self):
         self.stacked(500, IRREDUCIBLE_DELIVERY)
 
