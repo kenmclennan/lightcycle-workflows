@@ -15,8 +15,8 @@ Principal output is separate from `produces`, which lists artifact types (`branc
 
 | Value | Meaning | Steps |
 | --- | --- | --- |
-| `spec` | The step writes a spec or workflow design. | `spec-writer`, `design-workflow`, `amend-writer` |
-| `feature` | The step writes executable gherkin scenarios. | `feature-writer` |
+| `spec` | The step writes a spec or workflow design. | `spec-writer`, `design-workflow` |
+| `feature` | The step writes executable gherkin scenarios. | `feature-writer`, `amend-writer` |
 | `code` | The step writes code, or a change committed as code. | `write-code`, `scope-and-code`, `implement-features`, `audit-engine-pin` |
 | `workflow` | The step authors a workflow bundle. | `build-workflow` |
 | `guidance` | The step writes or checks guidance entries. | `guidance-writer`, `check-entries` |
