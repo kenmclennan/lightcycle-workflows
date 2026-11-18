@@ -51,6 +51,7 @@ flowchart TD
         RS -->|drop| IF
         COP -->|conflicted| RCF["resolve-conflict"]
         COP -->|too-big| CD
+        COP -->|layer-red| IF
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
         CAM -->|merged| CU(["cleanup"])
@@ -75,4 +76,4 @@ flowchart TD
 | `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
 | `cut-delivery` | agent | Decides one PR or a stack from the finished branch against the reviewable-change criteria (the bundle's own, `shared/layer-criteria.md`, not a guidance entry), cuts the layers, running the repo's tests and gates on each as it is cut, and closes `rework` to the coder with the failures named when one fails (the only source of that edge, capped by `review_rounds_cap`, which escalates to `review-ci`), and records its reasons. |
 | `review-stack` | human | Asked when the engine sees an unexpected stack shape (a layer closed unmerged). `reopen` resumes CI on every layer, `fold` has `cut-delivery` re-cut with the layer folded into its upper neighbour, `drop` has the coder remove the layer and restack the rest. |
-| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto --open`, falling back to one PR on exit 9), with the same size check: a layer over the `layer-lines-limit` config key (required, no default) and not marked `irreducible` closes `too-big` and goes back to `cut-delivery` (a refusal with the same figure as the last one parks for a human instead), CI, review, human merge (a stack with `gh stack merge <n>`). |
+| `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: code PR (a stack is opened with `gh stack submit --auto --open`, falling back to one PR on exit 9), with the same size check: a layer over the `layer-lines-limit` config key (required, no default) and not marked `irreducible` closes `too-big` and goes back to `cut-delivery` (a refusal with the same figure as the last one parks for a human instead); on a stack it also runs the repo's `.lightcycle/layer-check` on every unmerged layer at once and a red layer closes `layer-red` back to `implement-features`. The `.lightcycle/layer-check` contract: one line in the repo, read from the base branch, a typecheck and lint only (never the tests), safe to run concurrently, run on all unmerged layers at once. CI, review, human merge (a stack with `gh stack merge <n>`). |

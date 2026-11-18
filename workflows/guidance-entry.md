@@ -3,6 +3,7 @@ summary: a finding to merged guidance entries in one PR - written, mechanically 
 when-to-use: any change to the guidance repo - a new entry, an edit, or retiring one - so every entry has an item, a recorded finding, and a reviewed PR before it is delivered
 config:
   layer-lines-limit: optional
+  layer-check-timeout-seconds: optional
 ---
 
 # Guidance-entry

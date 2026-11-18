@@ -3,8 +3,10 @@ summary: spec, then frozen gherkin scenarios, then code that makes every scenari
 when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
 config:
   layer-lines-limit: required
+  layer-check-timeout-seconds: required
 config-example:
   layer-lines-limit: 400
+  layer-check-timeout-seconds: 120
 ---
 
 # BDD-driven
@@ -201,6 +203,7 @@ edges:
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict
   code-open-pr              too-big            cut-delivery
+  code-open-pr              layer-red          implement-features
   poll-ci                   conflicted         resolve-conflict
   watch-ci                  conflicted         resolve-conflict
   poll-ci                   succeeded          watch-ci
