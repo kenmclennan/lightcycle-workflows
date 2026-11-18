@@ -1,6 +1,6 @@
 ---
 model: sonnet
-principal-output: spec
+principal-output: feature
 accepts:
   spec: required
   deferred-findings: optional
