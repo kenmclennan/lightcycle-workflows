@@ -3,6 +3,7 @@ import os
 import importlib.util
 import subprocess
 import sys
+import time
 import unittest
 from unittest import mock
 
@@ -1227,6 +1228,243 @@ class SizeCheckTest(ScriptCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["outcome"], "too-big")
+
+
+class LayerCheckTest(ScriptCase):
+    LOG = 'echo "$(git rev-parse HEAD) $(git rev-parse --abbrev-ref HEAD)" >> "$LAYER_LOG"'
+
+    def setUp(self):
+        super().setUp()
+        self.lc_show["valid_outcomes"] = ["done", "conflicted", "layer-red"]
+        self.write_lc_show()
+        self.log = self.root / "layer.log"
+
+    def declare(self, command):
+        path = self.work / ".lightcycle"
+        path.mkdir(exist_ok=True)
+        (path / "layer-check").write_text(command + "\n")
+        sh("git", "add", ".lightcycle/layer-check", cwd=self.work)
+        sh("git", "commit", "-m", "chore: declare the layer check", cwd=self.work)
+        sh("git", "push", "origin", self.base_branch, cwd=self.work)
+
+    def layers(self, files=None):
+        files = files or {}
+        names = ["feat/x-1", "feat/x-2", "feat/x"]
+        for index, name in enumerate(names, start=1):
+            sh("git", "checkout", "-b", name, cwd=self.work)
+            for fname, content in files.get(index, {"layer%d.txt" % index: "l\n"}).items():
+                (self.work / fname).write_text(content)
+                sh("git", "add", fname, cwd=self.work)
+            sh("git", "commit", "-m", f"feat(x): layer {index}\n\nbody", cwd=self.work)
+        self.gh_state["stack"] = {"branches": names}
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [{"name": "delivery", "value": DELIVERY}]
+        self.write_lc_show()
+
+    def run_check(self, timeout="30", valid=None, **extra):
+        if valid:
+            self.lc_show["valid_outcomes"] = valid
+            self.write_lc_show()
+        env = {"LAYER_LOG": str(self.log), "LC_WORKFLOW_CONFIG_LAYER_CHECK_TIMEOUT_SECONDS": timeout}
+        env.update(extra)
+        return self.run_script("open-pr.py", extra_env=env)
+
+    def logged(self):
+        if not self.log.exists():
+            return []
+        return [line.split() for line in self.log.read_text().splitlines()]
+
+    def head(self, name):
+        return sh("git", "rev-parse", name, cwd=self.work).stdout.strip()
+
+    def assert_nothing_pushed(self):
+        writes = [c for c in self.gh_calls() if c["method"] not in ("GET", "STACK")]
+        self.assertEqual(writes, [])
+        self.assertEqual(self.lc_calls(), [])
+        remote = sh("git", "ls-remote", "--heads", "origin", "feat/x", cwd=self.work).stdout
+        self.assertEqual(remote, "")
+
+    def test_a_red_middle_layer_is_refused_naming_it(self):
+        self.declare(self.LOG + "; echo broken >&2; test ! -f bad.txt")
+        self.layers({2: {"bad.txt": "x\n"}})
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "layer-red")
+        self.assertTrue(out["note"].startswith("Layer 2 of 3 (feat/x-2 at"), out["note"])
+        self.assertIn("broken", out["note"])
+        self.assertNotIn("Layer 3", out["note"])
+        self.assertEqual({row[0] for row in self.logged()}, {self.head(n) for n in ("feat/x-1", "feat/x-2", "feat/x")})
+        self.assert_nothing_pushed()
+
+    def test_the_lowest_red_layer_is_named_even_when_a_higher_one_fails_first(self):
+        self.declare("if test -f bad2.txt; then sleep 2; exit 1; fi; test ! -f bad3.txt")
+        self.layers({2: {"bad2.txt": "x\n"}, 3: {"bad3.txt": "x\n"}})
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "layer-red")
+        self.assertTrue(out["note"].startswith("Layer 2 of 3"), out["note"])
+
+    def test_layers_run_in_parallel(self):
+        self.declare("sleep 3; " + self.LOG)
+        self.layers()
+
+        started = time.monotonic()
+        result = self.run_check()
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertLess(elapsed, 8)
+        self.assertEqual(len(self.logged()), 3)
+
+    def test_all_green_notes_the_time_of_every_layer(self):
+        self.declare(self.LOG)
+        self.layers()
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "done")
+        self.assertEqual({row[0] for row in self.logged()}, {self.head(n) for n in ("feat/x-1", "feat/x-2", "feat/x")})
+        self.assertEqual({row[1] for row in self.logged()}, {"HEAD"})
+        for position in (1, 2, 3):
+            self.assertRegex(out["note"], rf"layer {position} of 3 passed in \d+ s")
+
+    def test_no_declared_command_skips_with_a_note(self):
+        self.layers()
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "done")
+        self.assertEqual(self.logged(), [])
+        self.assertIn("layer check skipped: no .lightcycle/layer-check", out["note"])
+
+    def test_a_timeout_is_refused_with_its_own_note(self):
+        self.declare("sleep 30")
+        self.layers()
+
+        started = time.monotonic()
+        result = self.run_check(timeout="1")
+        elapsed = time.monotonic() - started
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "layer-red")
+        first = out["note"].splitlines()[0]
+        self.assertIn("Layer 1 of 3", first)
+        self.assertIn("layer check timed out after 1 s", first)
+        self.assertNotIn("exit", first)
+        self.assertLess(elapsed, 20)
+
+    def test_the_declaration_is_read_from_the_base_not_the_layer(self):
+        self.declare("test ! -f bad.txt")
+        self.layers({2: {"bad.txt": "x\n", ".lightcycle/layer-check": "true\n"}})
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "layer-red")
+        self.assertTrue(out["note"].startswith("Layer 2 of 3"), out["note"])
+
+    def merge_layer_one(self):
+        heads = ["feat/x-1", "feat/x-2", "feat/x"]
+        for index, head in enumerate(heads, start=1):
+            pull = {
+                "number": index, "html_url": f"https://github.com/o/r/pull/{index}",
+                "title": head, "body": "old", "head": head,
+                "state": "closed" if index == 1 else "open",
+            }
+            if index == 1:
+                pull["merged_at"] = "2026-01-01T00:00:00Z"
+            self.gh_state["pulls"].append(pull)
+        self.gh_state["stack"]["github"] = {"heads": heads}
+        self.write_gh_state()
+        self.lc_show["runs"][0]["stack"] = "https://github.com/o/r/stack/7"
+        self.write_lc_show()
+
+    def test_a_layer_that_is_merged_is_not_checked(self):
+        self.declare(self.LOG)
+        self.layers()
+        self.merge_layer_one()
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["outcome"], "done")
+        self.assertEqual({row[0] for row in self.logged()}, {self.head("feat/x-2"), self.head("feat/x")})
+        self.assertIn("layer 1 of 2 passed", out["note"])
+        self.assertIn("layer 2 of 2 passed", out["note"])
+
+    def test_a_red_result_among_unmerged_layers_numbers_them_among_the_unmerged(self):
+        self.declare("test ! -f bad.txt")
+        self.layers({2: {"bad.txt": "x\n"}})
+        self.merge_layer_one()
+
+        result = self.run_check()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)["note"].startswith("Layer 1 of 2 (feat/x-2 at"))
+
+    def test_the_check_does_not_run_when_the_stage_has_no_layer_red_outcome(self):
+        self.declare("exit 1")
+        self.layers()
+
+        result = self.run_check(valid=["done", "conflicted"])
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["outcome"], "done")
+        self.assertEqual(self.logged(), [])
+
+    def test_the_check_leaves_no_worktree_behind_and_the_item_branch_untouched(self):
+        self.declare("exit 1")
+        self.layers()
+        before = self.head("feat/x")
+        self.assertEqual(len(sh("git", "worktree", "list", cwd=self.work).stdout.splitlines()), 1)
+
+        result = self.run_check()
+
+        self.assertEqual(json.loads(result.stdout)["outcome"], "layer-red")
+        self.assertEqual(len(sh("git", "worktree", "list", cwd=self.work).stdout.splitlines()), 1)
+        self.assertEqual(self.head("feat/x"), before)
+
+    def test_a_second_red_at_the_same_layer_head_fails_the_stage(self):
+        self.declare("test ! -f bad.txt")
+        self.layers({2: {"bad.txt": "x\n"}})
+        prefix = "Layer 2 of 3 (feat/x-2 at %s)" % sh("git", "rev-parse", "--short", "feat/x-2", cwd=self.work).stdout.strip()
+        self.lc_show["stage"] = "code-open-pr"
+        self.lc_show["previous_step"] = "LC-1.3"
+        self.write_lc_show()
+        (self.stub / "lc-show-LC-1.3.json").write_text(json.dumps(
+            {"stage": "code-open-pr", "outcome": "layer-red", "report": prefix + " failed the layer check: exit 1 after 9 s"}
+        ))
+
+        result = self.run_check()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Layer check loop", result.stderr)
+
+    def test_an_invalid_timeout_key_fails_the_stage_naming_it(self):
+        self.declare("true")
+        self.layers()
+        for value in (None, "0", "abc", "241"):
+            with self.subTest(value=value):
+                env = {"LAYER_LOG": str(self.log), "LC_WORKFLOW_CONFIG_LAYER_CHECK_TIMEOUT_SECONDS": value}
+                result = self.run_script("open-pr.py", extra_env=env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("layer-check-timeout-seconds", result.stderr)
+        result = self.run_check(timeout="240")
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class OpenPrTimeoutTest(HangCase):

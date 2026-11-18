@@ -2,9 +2,11 @@
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 import gitproc
@@ -15,6 +17,13 @@ BODY_CLOSE = "<!-- /lc:body -->"
 
 LAYER_LINES_LIMIT_KEY = "layer-lines-limit"
 LAYER_LINES_LIMIT_ENV = "LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"
+
+LAYER_CHECK_FILE = ".lightcycle/layer-check"
+LAYER_CHECK_TIMEOUT_KEY = "layer-check-timeout-seconds"
+LAYER_CHECK_TIMEOUT_ENV = "LC_WORKFLOW_CONFIG_LAYER_CHECK_TIMEOUT_SECONDS"
+LAYER_CHECK_CEILING = 240
+LAYER_CHECK_OUTPUT_LINES = 40
+LAYER_CHECK_OUTPUT_CHARS = 4000
 
 
 class Fail(Exception):
@@ -652,6 +661,115 @@ def repeat_recut(step_id, step, note):
             return None
 
 
+def layer_check_command(base):
+    proc = run(["git", "show", f"{base}:{LAYER_CHECK_FILE}"], check=False)
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def layer_check_timeout():
+    raw = os.environ.get(LAYER_CHECK_TIMEOUT_ENV, "").strip()
+    if not raw:
+        raise Fail(f"the config key {LAYER_CHECK_TIMEOUT_KEY} is required and is not set")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 0
+    if value <= 0 or value > LAYER_CHECK_CEILING:
+        raise Fail(
+            f"the config key {LAYER_CHECK_TIMEOUT_KEY} must be a positive integer no greater than "
+            f"{LAYER_CHECK_CEILING}, got {raw!r}"
+        )
+    return value
+
+
+def run_layer_command(command, directory, limit):
+    started = monotonic()
+    code, output, timed_out = gitproc.run_combined(["sh", "-c", command], directory, limit)
+    return {
+        "code": code,
+        "seconds": round(monotonic() - started),
+        "output": output,
+        "timed_out": timed_out,
+    }
+
+
+def run_layer_checks(layers, command, limit):
+    directories = []
+    try:
+        for _, name in layers:
+            directory = tempfile.mkdtemp(prefix="lc-layer-check-")
+            directories.append(directory)
+            run(["git", "worktree", "add", "--detach", directory, name])
+        with ThreadPoolExecutor(max_workers=len(directories)) as pool:
+            futures = [pool.submit(run_layer_command, command, d, limit) for d in directories]
+            return [future.result() for future in futures]
+    finally:
+        for directory in directories:
+            run(["git", "worktree", "remove", "--force", directory], check=False)
+            shutil.rmtree(directory, ignore_errors=True)
+        run(["git", "worktree", "prune"], check=False)
+
+
+def layer_red_prefix(position, total, name):
+    return f"Layer {position} of {total} ({name} at {git('rev-parse', '--short', name)})"
+
+
+def tail_output(text):
+    lines = text.splitlines()[-LAYER_CHECK_OUTPUT_LINES:]
+    return "\n".join(lines)[-LAYER_CHECK_OUTPUT_CHARS:]
+
+
+def repeat_layer_red(step_id, step, prefix):
+    if not step.get("stage"):
+        return None
+    seen = {step_id}
+    current = step
+    while True:
+        previous_id = current.get("previous_step")
+        if not previous_id or previous_id in seen:
+            return None
+        seen.add(previous_id)
+        current = show_step(previous_id)
+        if current is None:
+            return None
+        if current.get("stage") == step.get("stage"):
+            report = current.get("report") or ""
+            if current.get("outcome") == "layer-red" and report.startswith(prefix):
+                return previous_id
+            return None
+
+
+def check_layers(step_id, step, layers):
+    base = base_ref()
+    command = layer_check_command(base)
+    if not command:
+        return None, f"layer check skipped: no {LAYER_CHECK_FILE} at {base}"
+    limit = layer_check_timeout()
+    results = run_layer_checks(layers, command, limit)
+    total = len(layers)
+    for position, ((_, name), result) in enumerate(zip(layers, results), start=1):
+        if result["code"] == 0 and not result["timed_out"]:
+            continue
+        prefix = layer_red_prefix(position, total, name)
+        if result["timed_out"]:
+            head = f"{prefix} layer check timed out after {limit} s"
+        else:
+            head = f"{prefix} failed the layer check: exit {result['code']} after {result['seconds']} s"
+        repeat = repeat_layer_red(step_id, step, prefix)
+        if repeat:
+            raise Fail(
+                f"Layer check loop: code-open-pr refused {prefix} twice running ({repeat} and "
+                f"{step_id}) and the layer head did not change. A human must decide what to do."
+            )
+        note = f"{head}\n{command}\n{tail_output(result['output'])}"
+        return {"outcome": "layer-red", "note": note}, ""
+    timings = "; ".join(
+        f"layer {position} of {total} passed in {result['seconds']} s"
+        for position, result in enumerate(results, start=1)
+    )
+    return None, f"layer check: {timings}"
+
+
 def abort_stale_rebase():
     for name in ("rebase-merge", "rebase-apply"):
         if os.path.exists(git("rev-parse", "--git-path", name)):
@@ -735,6 +853,11 @@ def main():
         refused = refuse_broken_chain(valid, names, branch)
         if refused:
             return refused
+        if "layer-red" in valid:
+            refused, check_note = check_layers(step_id, step, layers)
+            if refused:
+                return refused
+            notes.append(check_note)
         git("checkout", branch)
         dropped = recut_stack(owner, repo, names, recorded_stack)
         stack_url = submit_stack(branch)
