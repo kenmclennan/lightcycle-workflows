@@ -80,8 +80,7 @@ import json, os, sys
 stub = os.environ["STUB_DIR"]
 args = sys.argv[1:]
 if args[0] == "show":
-    per_id = stub + "/lc-show-" + args[1] + ".json"
-    print(open(per_id if os.path.exists(per_id) else stub + "/lc-show.json").read())
+    print(open(stub + "/lc-show.json").read())
 elif args[0] == "attach":
     with open(stub + "/lc-calls.jsonl", "a") as log:
         log.write(json.dumps(args) + "\\n")
@@ -163,13 +162,8 @@ class ScriptCase(unittest.TestCase):
             return []
         return [json.loads(line) for line in path.read_text().splitlines()]
 
-    def run_script(self, name, extra_env=None):
+    def run_script(self, name):
         env = dict(os.environ)
-        for key, value in (extra_env or {}).items():
-            if value is None:
-                env.pop(key, None)
-            else:
-                env[key] = value
         env["PATH"] = f"{self.bin}{os.pathsep}{env['PATH']}"
         env["STUB_DIR"] = str(self.stub)
         env["LC_STEP"] = self.step

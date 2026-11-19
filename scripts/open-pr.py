@@ -230,11 +230,11 @@ def close_rework_loop(owner, repo, num):
     return posted
 
 
-def refuse_merge_commits(base, tip="HEAD"):
-    merges = git("rev-list", "--merges", f"{base}..{tip}", check=False).split()
+def refuse_merge_commits(base):
+    merges = git("rev-list", "--merges", f"{base}..HEAD", check=False).split()
     if merges:
         raise Fail(
-            f"{tip} holds merge commit(s) {', '.join(merges)} ahead of {base}; a rebase would drop "
+            f"HEAD holds merge commit(s) {', '.join(merges)} ahead of {base}; a rebase would drop "
             "them and leave nothing to open a PR from. The squash most likely amended an upstream "
             "commit. Find the pre-amend commit with `git reflog`, run `git reset --keep <sha>` to "
             "it, then re-run."
