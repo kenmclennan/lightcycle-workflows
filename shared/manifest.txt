@@ -13,3 +13,4 @@ workflow-bundle-check: implement-features scope-and-code write-code
 base-ref: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-digest spec-writer watch-ci write-code
 rework-request: spec-writer design-workflow write-code feature-writer implement-features amend-writer build-workflow scope-and-code guidance-writer audit-engine-pin
 static-checks: implement-features scope-and-code write-code
+ci-failed-rework: write-code implement-features feature-writer amend-writer build-workflow scope-and-code audit-engine-pin
