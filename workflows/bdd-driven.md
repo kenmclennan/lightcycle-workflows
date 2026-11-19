@@ -30,7 +30,6 @@ provides: spec
 
 workspace:
   spec-writer               specs
-  spec-digest               specs
   spec-open-pr              specs
   spec-await-merge          specs
   spec-handle-feedback      specs
@@ -44,7 +43,6 @@ workspace:
 
 phase:
   spec-writer               spec
-  spec-digest               spec
   spec-open-pr              spec
   spec-await-merge          spec
   spec-handle-feedback      spec
@@ -84,7 +82,6 @@ phase:
 
 display:
   spec-writer               Writing spec
-  spec-digest               Writing digest
   spec-open-pr              Opening spec PR
   spec-await-merge          Review spec
   spec-handle-feedback      Reading feedback
@@ -150,10 +147,8 @@ nodes:
   amend-review-conflict     review-conflict
 
 edges:
-  spec-writer               done               spec-digest
-  spec-digest               done               spec-open-pr
-  spec-digest               no-change          nochange-open-pr
-  spec-writer               no-change          spec-digest
+  spec-writer               done               spec-open-pr
+  spec-writer               no-change          nochange-open-pr
   spec-open-pr              done               spec-await-merge
   nochange-open-pr          done               nochange-await-merge
   spec-await-merge          changes            spec-writer
