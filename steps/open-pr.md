@@ -1,6 +1,5 @@
 ---
 script: scripts/open-pr.py
-config: [layer-lines-limit, layer-check-timeout-seconds]
 accepts:
   branch: optional
 produces:
