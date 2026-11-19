@@ -99,7 +99,6 @@ edges:
   spec-await-merge          spec-merged    write-code
   spec-await-merge          head-moved     spec-await-merge
   write-code                done           code-open-pr
-  write-code                retried        write-code
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
   poll-ci                   conflicted     resolve-conflict

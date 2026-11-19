@@ -1,6 +1,6 @@
 squash-procedure: amend-writer build-workflow feature-writer implement-features scope-and-code spec-writer write-code
 gh-api-raw-field: handle-feedback review-code review-features review-workflow
-long-running-commands: implement-features resolve-conflict review-code scope-and-code write-code
+long-running-commands: implement-features resolve-conflict scope-and-code write-code
 spec-amendment-record: build-workflow implement-features write-code
 test-fan-sizing: implement-features resolve-conflict scope-and-code write-code
 spec-amendment-read: build-workflow implement-features review-code review-workflow write-code
@@ -12,3 +12,4 @@ review-findings: review-code review-features review-workflow
 workflow-bundle-check: implement-features scope-and-code write-code
 base-ref: amend-writer audit-engine-pin build-workflow check-entries design-workflow feature-writer guidance-writer implement-features resolve-conflict review-code review-conflict review-features review-workflow scope-and-code spec-digest spec-writer watch-ci write-code
 rework-request: spec-writer design-workflow write-code feature-writer implement-features amend-writer build-workflow scope-and-code guidance-writer audit-engine-pin
+static-checks: implement-features scope-and-code write-code

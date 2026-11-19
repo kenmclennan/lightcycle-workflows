@@ -4,7 +4,7 @@ Check on a backgrounded run before ending the turn that started it, rather than 
 
 - Check it by its task id with the harness's task-output tool (`TaskOutput` with `block=true` and a long timeout), not by inspecting the output file or running `ps`/`pgrep`: a run you piped through `tail` or a pager yourself prints nothing until it exits, so an empty output file mid-run is what a healthy run looks like, not evidence it died.
 - An output file that has stopped growing, or a process not visible from a fresh shell, is not evidence of a kill either: wait for the task notification or `TaskOutput` with `block=true`.
-- A full gate can take 15 to 30 minutes on a contended machine.
+- A whole-repository static check or a test run can take 15 to 30 minutes on a contended machine.
 - A `run_in_background` result that comes back with no output and nothing else to explain it is an infrastructure kill, not a completed result - retry once, but only for that no-output signal-exit signature and only after confirming no other full run of the same gate is still going.
 - If the same signature recurs, stop retrying and drop to the narrowest slice the foreground `timeout` param can cover instead, rather than a third attempt or a manual poll of the job's own PID once you've stepped away from it.
 - When the full run cannot be observed reliably this way, prefer the narrowest run that still proves the change over a full-suite run whose completion you cannot observe.
