@@ -187,7 +187,6 @@ edges:
   feature-resolve-conflict  escalate           feature-review-conflict
   feature-review-conflict   resolved           feature-open-pr      primary
   implement-features        done               code-open-pr
-  implement-features        retried            implement-features
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict

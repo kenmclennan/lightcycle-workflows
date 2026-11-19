@@ -40,7 +40,6 @@ flowchart TD
         RC -->|rejected| IF
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| IF
-        IF -->|retried| IF
         COP -->|conflicted| RCF["resolve-conflict"]
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
