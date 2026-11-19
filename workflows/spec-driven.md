@@ -1,20 +1,16 @@
 ---
 summary: spec to merged - a co-designed brief becomes a spec PR, then the same item builds the code
-when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
+when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code
 config:
-  layer-lines-limit: required
-  layer-check-timeout-seconds: required
-config-example:
-  layer-lines-limit: 400
-  layer-check-timeout-seconds: 120
+  layer-lines-limit: optional
+  layer-check-timeout-seconds: optional
 ---
 
 # Spec-driven
 
 One item, one id, spanning the whole arc: a brief from co-design becomes a formal spec on a spec
-PR, and once that PR merges the same item continues into the code build - write the code, cut the
-delivery (one PR or a stack, decided once there and never by the spec), open the code PR, watch CI,
-review, human merge. There is no workflow flip: the spec phase and the code
+PR, and once that PR merges the same item continues into the code build - write the code, open the
+code PR (one PR per item), watch CI, review, human merge. There is no workflow flip: the spec phase and the code
 phase are two positions of one workflow. `open-pr` and `await-merge` each appear twice (once per
 PR); the spec-phase steps take their worktree from the specs repo (`specs-remote`), the code phase
 from the project repo. The human review gate is the spec PR itself - no separate inline
@@ -34,7 +30,6 @@ workspace:
   nochange-open-pr          specs
   nochange-await-merge      specs
   nochange-handle-feedback  specs
-  cut-delivery              project
   code-open-pr              project
   cleanup                   project
 
@@ -48,7 +43,6 @@ phase:
   nochange-await-merge      spec
   nochange-handle-feedback  spec
   write-code                code
-  cut-delivery              code
   code-open-pr              code
   poll-ci                   code
   watch-ci                  code
@@ -59,7 +53,6 @@ phase:
   review-ci                 code
   code-handle-feedback      code
   review-conflict           code
-  review-stack              code
 
 display:
   spec-writer               Writing spec
@@ -71,7 +64,6 @@ display:
   nochange-await-merge      Review spec (no change)
   nochange-handle-feedback  Reading feedback
   write-code                Coding
-  cut-delivery              Cutting delivery
   code-open-pr              Opening code PR
   poll-ci                   Watching CI
   watch-ci                  Reviewing CI result
@@ -82,7 +74,6 @@ display:
   review-conflict           Resolve conflict
   review-ci                 CI needs a call
   code-handle-feedback      Reading feedback
-  review-stack              Stack shape needs a call
 
 nodes:
   spec-open-pr              open-pr
@@ -107,14 +98,10 @@ edges:
   nochange-await-merge      head-moved     nochange-await-merge
   spec-await-merge          spec-merged    write-code
   spec-await-merge          head-moved     spec-await-merge
-  write-code                done           cut-delivery
+  write-code                done           code-open-pr
   write-code                retried        write-code
-  cut-delivery              done           code-open-pr
-  cut-delivery              rework         write-code
   code-open-pr              done           poll-ci           primary
   code-open-pr              conflicted     resolve-conflict
-  code-open-pr              too-big        cut-delivery
-  code-open-pr              layer-red      write-code
   poll-ci                   conflicted     resolve-conflict
   watch-ci                  conflicted     resolve-conflict
   poll-ci                   succeeded      watch-ci
@@ -126,19 +113,12 @@ edges:
   watch-ci                  review-rework  write-code
   review-code               done           code-await-merge  primary
   review-code               rejected       write-code
-  review-code               recut          cut-delivery
   code-await-merge          merged         cleanup
   cleanup                   done
   code-await-merge          changes        write-code
   code-await-merge          conflicted     resolve-conflict
   code-await-merge          gave-up        review-conflict
   code-await-merge          head-moved     poll-ci
-  poll-ci                   stack-shape    review-stack
-  watch-ci                  stack-shape    review-stack
-  code-await-merge          stack-shape    review-stack
-  review-stack              reopen         poll-ci
-  review-stack              fold           cut-delivery
-  review-stack              drop           write-code
   resolve-conflict          resolved       code-open-pr      primary
   resolve-conflict          escalate       review-conflict
   review-ci                 reviewed
@@ -171,14 +151,10 @@ hooks:
   pr_head_moved         code-await-merge      head-moved
   pr_conflict           poll-ci               conflicted
   pr_conflict           watch-ci              conflicted
-  pr_stack_shape        poll-ci               stack-shape
-  pr_stack_shape        watch-ci              stack-shape
-  pr_stack_shape        code-await-merge      stack-shape
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
   review_rounds_cap     watch-ci              review-rework  review-ci
-  review_rounds_cap     cut-delivery          rework         review-ci
   mention_token         spec-await-merge      @lc
   mention_token         nochange-await-merge  @lc
   mention_token         code-await-merge      @lc

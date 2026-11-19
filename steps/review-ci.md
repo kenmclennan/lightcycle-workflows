@@ -6,7 +6,7 @@ detail: [pr, in:report, outcome]
 
 # Review-ci (you + driver)
 
-The engine routes an item here on one of two caps, and a human opening this step must first tell which fired. `ci_failed_cap` means CI kept failing and the coder stage kept reworking it without landing a green run. `review_rounds_cap` means the CI-watch stage kept closing `review-rework` on new review comments, often with CI green. In a bundle with a `cut-delivery` stage, `review_rounds_cap` can also mean `cut-delivery` kept closing `rework` because the branch's own tests or gates failed on a layer as it was cut; its notes name the failing tests. The coder is not converging on its own either way; decide what happens next.
+The engine routes an item here on one of two caps, and a human opening this step must first tell which fired. `ci_failed_cap` means CI kept failing and the coder stage kept reworking it without landing a green run. `review_rounds_cap` means the CI-watch stage kept closing `review-rework` on new review comments, often with CI green. The coder is not converging on its own either way; decide what happens next.
 
 To tell which cap fired, read the step note or park reason, which names the cap when present. Otherwise `lc trace ITEM` shows whether the run of CI-watch outcomes is `ci-failed` or `review-rework`.
 

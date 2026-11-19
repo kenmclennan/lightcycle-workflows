@@ -1,12 +1,9 @@
 ---
 summary: spec, then frozen gherkin scenarios, then code that makes every scenario pass
-when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them; whether it ships as one PR or a stack is decided once by cut-delivery after the code is written, never by the spec
+when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them
 config:
-  layer-lines-limit: required
-  layer-check-timeout-seconds: required
-config-example:
-  layer-lines-limit: 400
-  layer-check-timeout-seconds: 120
+  layer-lines-limit: optional
+  layer-check-timeout-seconds: optional
 ---
 
 # BDD-driven
@@ -16,8 +13,7 @@ when needed. A brief from co-design becomes a formal spec on a spec PR; once tha
 feature-writer derives executable gherkin `.feature` scenarios (tagged `@wip`, gherkin only so
 nothing collects them yet) on a feature PR that a review-features agent primes for the human; once
 that merges, implement-features writes the code and step definitions to make every scenario pass -
-implementing to the spec, un-`@wip`-ing each scenario as it goes green - cuts the delivery (one PR
-or a stack, decided once there and never by the spec), opens the code PR, watches CI, is reviewed,
+implementing to the spec, un-`@wip`-ing each scenario as it goes green - opens the code PR (one PR per item), watches CI, is reviewed,
 and the human merges. Implement-features may never edit a scenario itself; if one
 is wrong and a human has authorized the fix on the code PR's own comment thread, it hands off to
 the `amend` phase instead, which rewrites the named scenario(s) on their own PR and, once merged,
@@ -45,7 +41,6 @@ workspace:
   nochange-await-merge      specs
   nochange-handle-feedback  specs
   feature-open-pr           project
-  cut-delivery              project
   code-open-pr              project
   amend-open-pr             project
   cleanup                   project
@@ -70,7 +65,6 @@ phase:
   feature-resolve-conflict  feature
   feature-review-conflict   feature
   implement-features        code
-  cut-delivery              code
   code-open-pr              code
   poll-ci                   code
   watch-ci                  code
@@ -90,7 +84,6 @@ phase:
   amend-resolve-conflict    amend
   amend-review-conflict     amend
   review-conflict           code
-  review-stack              code
 
 display:
   spec-writer               Writing spec
@@ -112,7 +105,6 @@ display:
   feature-resolve-conflict  Resolving conflict (scenarios)
   feature-review-conflict   Resolve conflict (scenarios)
   implement-features        Coding
-  cut-delivery              Cutting delivery
   code-open-pr              Opening code PR
   poll-ci                   Watching CI
   watch-ci                  Reviewing CI result
@@ -123,7 +115,6 @@ display:
   review-conflict           Resolve conflict
   review-ci                 CI needs a call
   code-handle-feedback      Reading feedback
-  review-stack              Stack shape needs a call
   amend-writer              Amending scenario
   amend-open-pr             Opening scenario-amendment PR
   amend-poll-ci             Watching CI (scenario amendment)
@@ -195,15 +186,11 @@ edges:
   feature-resolve-conflict  resolved           feature-open-pr      primary
   feature-resolve-conflict  escalate           feature-review-conflict
   feature-review-conflict   resolved           feature-open-pr      primary
-  implement-features        done               cut-delivery
+  implement-features        done               code-open-pr
   implement-features        retried            implement-features
-  cut-delivery              done               code-open-pr
-  cut-delivery              rework             implement-features
   implement-features        scenario-conflict  amend-writer
   code-open-pr              done               poll-ci              primary
   code-open-pr              conflicted         resolve-conflict
-  code-open-pr              too-big            cut-delivery
-  code-open-pr              layer-red          implement-features
   poll-ci                   conflicted         resolve-conflict
   watch-ci                  conflicted         resolve-conflict
   poll-ci                   succeeded          watch-ci
@@ -215,19 +202,12 @@ edges:
   watch-ci                  review-rework      implement-features
   review-code               done               code-await-merge     primary
   review-code               rejected           implement-features
-  review-code               recut              cut-delivery
   code-await-merge          merged             cleanup
   cleanup                   done
   code-await-merge          changes            implement-features
   code-await-merge          conflicted         resolve-conflict
   code-await-merge          gave-up            review-conflict
   code-await-merge          head-moved         poll-ci
-  poll-ci                   stack-shape        review-stack
-  watch-ci                  stack-shape        review-stack
-  code-await-merge          stack-shape        review-stack
-  review-stack              reopen             poll-ci
-  review-stack              fold               cut-delivery
-  review-stack              drop               implement-features
   resolve-conflict          resolved           code-open-pr         primary
   resolve-conflict          escalate           review-conflict
   amend-writer              done               amend-open-pr
@@ -294,14 +274,10 @@ hooks:
   pr_head_moved         code-await-merge      head-moved
   pr_conflict           poll-ci               conflicted
   pr_conflict           watch-ci              conflicted
-  pr_stack_shape        poll-ci               stack-shape
-  pr_stack_shape        watch-ci              stack-shape
-  pr_stack_shape        code-await-merge      stack-shape
   ci_success            poll-ci               succeeded
   ci_failure            poll-ci               failed
   ci_failed_cap         watch-ci              ci-failed      3  review-ci
   review_rounds_cap     watch-ci              review-rework  review-ci
-  review_rounds_cap     cut-delivery          rework         review-ci
   pr_conflict           feature-poll-ci       conflicted
   pr_conflict           feature-watch-ci      conflicted
   ci_success            feature-poll-ci       succeeded
