@@ -16,7 +16,7 @@ Node shape shows who runs each stage: `[ agent-step ]` an ephemeral agent claims
 flowchart TD
     brief(["brief + repo"]) --> SW["spec-writer"]
     subgraph S ["spec phase (specs repo)"]
-        SW --> SD["spec-digest"] --> SOP["spec-open-pr"] --> SAM{{"spec-await-merge"}}
+        SW --> SOP["spec-open-pr"] --> SAM{{"spec-await-merge"}}
         SAM -->|changes| SW
     end
     SAM -->|spec-merged| WC["write-code"]
@@ -43,8 +43,7 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `spec-writer` | agent | Formalizes the brief into a spec on a branch in the specs repo. |
-| `spec-digest` | agent | Writes a short plain-language digest of the spec beside it, for the human at the spec gate. It opens with relative links to the brief and the spec, and the brief is attached to the item so the gate shows it beside the spec and digest. A no-change spec gets the same digest on its way to the `no-change` gate. |
+| `spec-writer` | agent | Formalizes the brief into a spec on a branch in the specs repo. It also writes the plain-language digest of the spec beside it, for the human at the spec gate: relative links to the brief and the spec, the same digest for a no-change spec, and the brief attached to the item so the gate shows it beside the spec and digest. |
 | `spec-open-pr` / `spec-await-merge` | script / human | Opens the spec PR; the human reviews and merges it (the review gate). |
 | `nochange-open-pr` / `nochange-await-merge` | script / human | The spec PR's second gate: `spec-writer` closes `no-change` when the spec concludes nothing should change. Merging that PR completes the item with no code phase. |
 | `write-code` | agent | Implements the spec so every acceptance check passes. |

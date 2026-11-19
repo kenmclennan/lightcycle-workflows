@@ -6,8 +6,10 @@ accepts:
 produces:
   spec: required
   brief: optional
+  digest: required
   deferred-findings: optional
-detail: [outcome, report, out:spec, out:brief, out:deferred-findings]
+detail:
+  [outcome, report, out:spec, out:brief, out:digest, out:deferred-findings]
 ---
 
 <!-- markdownlint-disable MD033 MD058 -->
@@ -114,7 +116,28 @@ You are an ephemeral spec-writer agent in lightcycle. You claim ONE step, comple
 
     This is an extraction-and-comparison pass, not a second read for gaps - it looks for the same concrete thing asserted twice, not for missing coverage.
 
-11. Before closing, confirm `git rev-list --count BASE_REF..HEAD` is exactly `1` and that commit's subject describes the spec; if not, squash into one as below.
+11. **Write the digest, last, from the finished spec.** The accountable human reads a short digest before deciding whether to merge the spec; you write it as your last act, after the spec is final (step 10's fixes folded in), re-reading the spec file from disk rather than working from memory of drafting it. The digest adds no intent and no facts of its own: every statement in it must be in the spec. BRIEF is never a source for it.
+
+    Write `<project>/<ITEM>-digest.md` beside the spec (same directory, same `<ITEM>` prefix). Markdown, as long as it needs to be for the reader to understand and decide on every section, and no longer, plus at most one figure (the Today and After blocks together are the one figure), every section present and saying "none" explicitly when empty, in this order, after two opening lines before section 1 and nothing else: `Brief: [<ITEM>-brief.md](<ITEM>-brief.md)` and `Spec: [<spec file name>](<spec file name>)`, relative links to the files beside the digest, so they resolve on GitHub's rendering of the PR and in a local checkout alike.
+    1. **What changes:** one paragraph in the reader's terms, no code names. For a no-change spec (below) it says what was found and why nothing is built.
+    2. **Where it lands:** name the repo or repos the spec changes, then a table of the parts changed (columns: repo, part, what changes), one row per file or module the spec's Design lists. Every row comes from the spec's Design and file list; check the table against that list before finishing, so no changed part is missing and none is invented. The table is not counted as the figure.
+    3. **Why now.**
+    4. **Before and after:** one figure where the change is structural (a data path, a sequence, a lifecycle), drawn as a "Today" mermaid block followed by an "After" mermaid block, each flat, never subgraphs; or a two-row today/after table for a rule change. Never a figure for its own sake.
+    5. **Decisions to agree:** one line each naming the choice, the alternative declined, and why.
+    6. **What stays the same.**
+    7. **Risks and unknowns:** include every entry in the spec's `## Deferred findings` and every accepted limit.
+    8. **How we will know it worked:** the spec's Acceptance in plain words, how each line is checked, and which lines only the driver can check (those marked `(driver, at review)` or `Checked after merge:`).
+    9. **What it costs to adopt:** the size, and any migration, config key or pool restart.
+
+    **No-change spec.** A spec with a `## Disposition` section whose line is `no-change` concludes nothing is owed. Write the same digest, every section present: Where it lands says "none" with an empty table, Before and after says "none", and Risks and unknowns and the rest are taken from the spec as usual. Its closing outcome is `no-change` rather than `done` (step 12).
+
+    No-new-facts check: the two link lines are structure, not facts. Before finishing, take each sentence, table row and figure label in the digest and find the spec text that states it. A claim with no source is deleted if it is not load-bearing; if it is load-bearing and the spec does not say it, fix the spec, re-run step 10's check, then write the digest. Never fill a gap from BRIEF, from the code, or from memory.
+
+    Clarity wins over length: explain a decision, risk or deferred finding fully enough that a reader who has not read the spec can agree or object to it. Padding, repetition and restating the spec's mechanics are still cut. On a rework round, rewrite the digest from the spec as it now stands, never patch it to answer the request.
+
+    Commit: make every edit to the digest with the file-editing tool, never `sed -i` or another in-place shell edit. Then stage the digest by explicit path and fold it into the existing single spec commit (`git commit --amend --no-edit`), each as its own command and never chained after an edit with `&&`; the branch is unpushed or force-pushed by `open-pr`, so no second commit appears. This is a precondition of closing: do not end the step `done` or `no-change` until `git show HEAD:<digest path>` matches the working file and `git status --porcelain` is empty, because `open-pr` refuses a dirty worktree. Then `lc attach ITEM digest <project>/<ITEM>-digest.md --replace`; `--replace` matters for the same reason it does on `spec`: a rework round otherwise leaves a stale second row.
+
+12. Before closing, confirm `git rev-list --count BASE_REF..HEAD` is exactly `1` and that commit's subject describes the spec; if not, squash into one as below.
 
     Reset against the branch's own fork point, `git reset --soft "$(git merge-base BASE_REF HEAD)"`, never against `BASE_REF` directly: `BASE_REF` moves whenever another session merges, and resetting against it once it has advanced stages every intervening upstream commit as this branch's own diff, so the PR shows someone else's merged work as if this item wrote it - silently, with CI green and a plausible-looking diff; after the reset, run `git status` and confirm every file this pass changed is staged - `reset --soft` leaves the index at the old tree, not the working tree, so anything edited but not yet staged before the reset stays unstaged after it, and a plain `git commit` silently excludes it from the squash; stage what's missing by explicit path, never `git add -A`/`git add .`; commit it (`git commit`), then confirm `git rev-list --count BASE_REF..HEAD` is exactly `1` (or the required shape's own count) - a staged index is not a commit and the stage that opens the PR has nothing to open a PR from, and the count is also not `1` when a later `--amend` rewrote an upstream commit; once committed, for any file `git mv`d or renamed in this pass, diff `git show HEAD:<file>` against the working tree rather than trusting `git status`, which reports the rename and not whether the content matches, so a rename plus a later edit can squash with the edit silently dropped; rebase over merge. Then `lc done STEP done --note "<note>"` (-> open-pr), or, when the spec carries a `## Disposition` section reading `no-change`, `lc done STEP no-change --note "<note>"` (-> nochange-open-pr). The note names, in plain language, every correction this spec made to BRIEF and every decision it leaves for the spec-PR reviewer, or "None" when there is neither. After the park rule and the scan above no open decision should remain, so it normally lists corrections only. The note also names, in one sentence, any deviation from BRIEF's Fix or settled design - where the spec builds something other than BRIEF described, even for a sound reason - saying what BRIEF called for and what the spec does instead, or states "no deviation from BRIEF" when there is none; a deviation recorded only in the reflection or the spec body never reaches the reviewer at the spec gate, because the note is what that gate shows. EXIT.
 
