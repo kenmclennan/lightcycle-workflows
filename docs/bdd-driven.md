@@ -1,10 +1,10 @@
 # bdd-driven
 
-**A behaviour-first variant of [spec-driven](spec-driven.md): three PRs, three gates.** The spec still comes first and is reviewed on its own PR, but the executable acceptance criteria are then written as gherkin `.feature` scenarios on a second PR - reviewed and agreed _before_ any code exists. The coder then implements to the spec and makes those (frozen) scenarios pass. The scenarios are the executable contract; the spec is the design intent the code is reviewed against.
+**A behaviour-first variant of [spec-driven](spec-driven.md): three PRs, three gates, and a fourth PR only when a scenario must change.** The spec still comes first and is reviewed on its own PR, but the executable acceptance criteria are then written as gherkin `.feature` scenarios on a second PR - reviewed and agreed _before_ any code exists. The coder then implements to the spec and makes those (frozen) scenarios pass. The scenarios are the executable contract; the spec is the design intent the code is reviewed against.
 
 **Use it when** you want the acceptance criteria pinned as executable scenarios and agreed before implementation - behaviour-driven development, where "what it must do" is settled and falsifiable up front.
 
-**Phases:** `spec` (specs repo), then `feature` and `code` (both the project repo, as two distinct phases so each gets its own PR and branch). Scenarios are tagged `@wip` so CI skips them until the code exists; `implement-features` removes the tag as each scenario goes green.
+**Phases:** `spec` (specs repo), then `feature` and `code` (both the project repo, as two distinct phases so each gets its own PR and branch), plus an `amend` phase (also the project repo) entered only when a human has authorized a fix to a frozen scenario. Scenarios are tagged `@wip` so CI skips them until the code exists; `implement-features` removes the tag as each scenario goes green.
 
 The graph is `workflows/bdd-driven.md`; the step prompts are in `steps/*.md`. The spec and code phases reuse spec-driven's steps; only the feature phase and the coder differ.
 
@@ -31,6 +31,16 @@ flowchart TD
         FAM -->|changes| FW
     end
     FAM -->|features-merged| IF["implement-features"]
+    subgraph A ["amend phase (project repo)"]
+        AW --> AOP["amend-open-pr"] --> AWCI["amend-watch-ci"]
+        AWCI -->|ci-failed| AW
+        AWCI -->|review-rework| AW
+        AWCI -.->|"ci_failed_cap: ci-failed"| ARCI{{"amend-review-ci"}}
+        AWCI -.->|"review_rounds_cap: review-rework"| ARCI
+        AWCI -->|done| AAM{{"amend-await-merge"}}
+        AAM -->|changes| AW
+        AAM -->|scenario-merged| IF
+    end
     subgraph C ["code phase (project repo)"]
         IF --> COP["code-open-pr"] --> WCI["watch-ci"] --> RC["review-code"]
         WCI -->|ci-failed| IF
@@ -40,6 +50,7 @@ flowchart TD
         RC -->|rejected| IF
         RC -->|done| CAM{{"code-await-merge"}}
         CAM -->|changes| IF
+        IF -->|scenario-conflict| AW["amend-writer"]
         COP -->|conflicted| RCF["resolve-conflict"]
         CAM -->|conflicted| RCF
         RCF -->|resolved| COP
@@ -62,5 +73,7 @@ flowchart TD
 | `feature-watch-ci` | agent | Watches CI on the feature PR (the gherkin-only suite); routes failing CI and correct review comments back to `feature-writer` (each capped, then `feature-review-ci`). |
 | `review-features` | agent | Reviews the scenarios against the spec - coverage, depth, faithfulness, `@wip` tags - and primes the human gate; bounces back to `feature-writer` on gaps. |
 | `feature-await-merge` | human | Reviews and merges the scenarios (the second gate) - behaviour agreed before code. |
-| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is a `feature-writer` defect, routed back, not patched). |
+| `implement-features` | agent | Implements to the spec _and_ makes every scenario pass; may only remove `@wip`, never edit a scenario (a wrong scenario is never patched by the coder: with a human's authorization on the code PR it routes `scenario-conflict` to `amend-writer`, otherwise it blocks for a human). |
+| `amend-writer` | agent | Entered by `implement-features`'s `scenario-conflict` edge, only when a human authorized the fix on the code PR's comment thread. Rewrites the named scenario(s) on their own PR. |
+| `amend-open-pr` -> `amend-watch-ci` -> `amend-await-merge` | script / agent / human | The amend phase's own PR, CI watch and human gate (a fourth PR). Merging it (`scenario-merged`) hands back to `implement-features`, which picks up the amended scenarios on its next rebase. |
 | `code-open-pr` -> `cleanup` | script / human | Same as spec-driven: one code PR per item, then CI, review and human merge. |
