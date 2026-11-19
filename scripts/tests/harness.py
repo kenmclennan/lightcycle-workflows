@@ -15,44 +15,8 @@ state_path = os.environ["STUB_DIR"] + "/gh-state.json"
 log_path = os.environ["STUB_DIR"] + "/gh-calls.jsonl"
 state = json.load(open(state_path))
 args = sys.argv[1:]
-if args[0] == "stack":
-    with open(log_path, "a") as log:
-        log.write(json.dumps({"method": "STACK", "path": " ".join(args[1:]), "fields": {}}) + "\\n")
-    cfg = state.get("stack")
-    sub = args[1]
-    locks = (cfg or {}).get("lock_failures") or {}
-    if locks.get(sub):
-        locks[sub] -= 1
-        json.dump(state, open(state_path, "w"))
-        sys.stderr.write("another process is currently editing the stack - try again later\\n"); sys.exit(1)
-    if sub == "view":
-        if not cfg or not cfg.get("branches"):
-            sys.stderr.write("not in a stack\\n"); sys.exit(1)
-        print(json.dumps({"trunk": "main", "branches": [{"name": n} for n in cfg["branches"]]}))
-    elif sub == "rebase":
-        sys.exit(cfg.get("rebase_rc", 0))
-    elif sub == "unstack":
-        cfg.pop("github", None)
-        if cfg.get("unstack_clears_local"):
-            cfg["branches"] = []
-        json.dump(state, open(state_path, "w"))
-    elif sub == "init":
-        pass
-    elif sub == "submit":
-        rc = cfg.get("submit_rc", 0)
-        if rc:
-            sys.stderr.write("stacks are not enabled\\n"); sys.exit(rc)
-        for name in cfg["branches"]:
-            if not any(p.get("head") == name for p in state["pulls"]):
-                num = len(state["pulls"]) + 1
-                state["pulls"].append({"number": num, "html_url": "https://github.com/o/r/pull/%%d" %% num,
-                                       "title": "auto " + name, "body": "auto body", "head": name})
-        json.dump(state, open(state_path, "w"))
-        print("Stack: https://github.com/o/r/stack/%%d" %% cfg.get("submit_stack", 7))
-    sys.exit(0)
 assert args[0] == "api"
 method, fields, path = None, {}, None
-gh_stack = (state.get("stack") or {}).get("github")
 i = 1
 while i < len(args):
     a = args[i]
@@ -78,15 +42,7 @@ def out(value):
     print(json.dumps(value))
 
 bare = path.split("?")[0]
-if method == "GET" and re.search(r"/stacks/\\d+$", bare):
-    if not gh_stack:
-        sys.stderr.write("gh: HTTP 404\\n"); sys.exit(1)
-    out({"base": {"ref": "main"}, "pull_requests": [
-        {"number": p["number"], "state": p.get("state", "open"), "merged_at": p.get("merged_at"), "head": {"ref": p["head"], "sha": "x"}}
-        for h in gh_stack["heads"] for p in state["pulls"] if p["head"] == h]})
-elif method == "DELETE":
-    out({})
-elif method == "GET" and bare.endswith("/pulls"):
+if method == "GET" and bare.endswith("/pulls"):
     wanted = path.partition("head=")[2].partition("&")[0].partition(":")[2]
     out([p for p in state["pulls"] if not wanted or p.get("head", wanted) == wanted])
 elif method == "POST" and bare.endswith("/pulls"):
@@ -209,7 +165,6 @@ class ScriptCase(unittest.TestCase):
 
     def run_script(self, name, extra_env=None):
         env = dict(os.environ)
-        env["LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"] = "400"
         for key, value in (extra_env or {}).items():
             if value is None:
                 env.pop(key, None)
@@ -267,7 +222,6 @@ class HangCase(ScriptCase):
         env["STUB_DIR"] = str(self.stub)
         env["LC_STEP"] = self.step
         env["LC_ITEM"] = self.item
-        env["LC_WORKFLOW_CONFIG_LAYER_LINES_LIMIT"] = "400"
         if getattr(self, "grandchild", False):
             env["STUB_GRANDCHILD"] = "1"
         return subprocess.run(

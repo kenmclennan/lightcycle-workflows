@@ -1,9 +1,6 @@
 ---
 summary: spec to merged - a co-designed brief becomes a spec PR, then the same item builds the code
 when-to-use: the default build flow for a well-scoped feature or fix, spec reviewed before code
-config:
-  layer-lines-limit: optional
-  layer-check-timeout-seconds: optional
 ---
 
 # Spec-driven

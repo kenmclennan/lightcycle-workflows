@@ -1,9 +1,6 @@
 ---
 summary: spec, then frozen gherkin scenarios, then code that makes every scenario pass
 when-to-use: behaviour worth pinning as an executable acceptance contract before implementing - the scenarios are frozen and the code is written to satisfy them
-config:
-  layer-lines-limit: optional
-  layer-check-timeout-seconds: optional
 ---
 
 # BDD-driven
