@@ -107,26 +107,3 @@ def run(args, *, timeout=None, retry=True):
         if result is None:
             raise GitTimeout(" ".join(args), limit, attempt)
         return result
-
-
-def run_combined(args, cwd, timeout):
-    proc = subprocess.Popen(
-        args,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        errors="replace",
-        start_new_session=True,
-    )
-    timed_out = False
-    try:
-        output, _ = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        timed_out = True
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        output, _ = proc.communicate()
-    return proc.returncode, output or "", timed_out
