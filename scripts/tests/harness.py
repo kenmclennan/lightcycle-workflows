@@ -63,6 +63,10 @@ elif re.search(r"/pulls/\\d+$", bare):
     if method == "PATCH":
         pull.update(fields); save()
     out(pull)
+elif method == "GET" and bare == "user":
+    if state.get("user_error"):
+        sys.stderr.write("gh: HTTP 500\\n"); sys.exit(1)
+    out(state.get("user", {"login": "operator"}))
 elif method == "GET" and re.search(r"/issues/\\d+/comments$", bare):
     out(state.get("issue_comments", []))
 elif method == "GET" and re.search(r"/pulls/\\d+/comments$", bare):

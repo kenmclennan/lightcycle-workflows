@@ -192,6 +192,26 @@ def parse_time(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def authenticated_login():
+    try:
+        login = gh_json("user")[0]["login"]
+    except (Fail, ValueError, LookupError):
+        return None
+    return (login or "").casefold() or None
+
+
+def thread_is_ours(comment, review_comments, login):
+    if not login:
+        return False
+    root = comment
+    if comment.get("in_reply_to_id"):
+        root = next((c for c in review_comments if c.get("id") == comment["in_reply_to_id"]), None)
+    if root is None:
+        return False
+    author = (root.get("user") or {}).get("login") or ""
+    return author.casefold() == login
+
+
 def close_rework_loop(owner, repo, num):
     base = f"repos/{owner}/{repo}"
     issue_comments = gh_json(f"{base}/issues/{num}/comments", "--paginate")
@@ -209,6 +229,8 @@ def close_rework_loop(owner, repo, num):
     sha = git("rev-parse", "HEAD")
     subject = git("log", "-1", "--format=%s")
     posted = 0
+    login = None
+    login_read = False
     for kind, comment in tagged:
         body = comment.get("body") or ""
         cid = str(comment["id"])
@@ -217,12 +239,20 @@ def close_rework_loop(owner, repo, num):
         stamp = comment.get("created_at") or comment.get("submitted_at")
         if not stamp or parse_time(stamp) >= commit_time:
             continue
+        in_thread = False
+        if kind == "review-comment":
+            if not login_read:
+                login, login_read = authenticated_login(), True
+            in_thread = thread_is_ours(comment, review_comments, login)
+        link = ""
+        if kind == "review-comment" and not in_thread and comment.get("html_url"):
+            link = f"In reply to {comment['html_url']}\n"
         reply = (
-            f"<!-- lc -->\n<!-- lc:completes={cid} -->\n"
+            f"AUTOMATED: <!-- lc -->\n<!-- lc:completes={cid} -->\n{link}"
             f"Pushed {sha} (\"{subject}\") for this request. "
             "This reply records that the push happened; it does not verify the push addresses the request."
         )
-        if kind == "review-comment":
+        if in_thread:
             gh_write(f"{base}/pulls/{num}/comments/{cid}/replies", {"body": reply})
         else:
             gh_write(f"{base}/issues/{num}/comments", {"body": reply})
