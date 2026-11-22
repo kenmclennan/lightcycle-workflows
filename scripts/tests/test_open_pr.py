@@ -413,8 +413,20 @@ class OpenPrNonMainBaseTest(ScriptCase):
 
 
 class CompletionRepliesTest(ScriptCase):
-    def ack(self, cid, stamp, extra=""):
-        return {"id": cid, "created_at": stamp, "body": f"<!-- lc -->\n<!-- lc:decision=rework -->\n{extra}ack"}
+    def ack(self, cid, stamp, extra="", reply_to=None, login="operator"):
+        comment = {
+            "id": cid,
+            "created_at": stamp,
+            "user": {"login": login},
+            "html_url": f"https://github.com/o/r/pull/1#discussion_r{cid}",
+            "body": f"<!-- lc -->\n<!-- lc:decision=rework -->\n{extra}ack",
+        }
+        if reply_to:
+            comment["in_reply_to_id"] = reply_to
+        return comment
+
+    def root_comment(self, cid, login):
+        return {"id": cid, "created_at": "2000-01-01T00:00:00Z", "user": {"login": login}, "body": "root"}
 
     def open_pr_then_seed(self, **lists):
         self.feature_branch()
@@ -449,9 +461,98 @@ class CompletionRepliesTest(ScriptCase):
         self.assertEqual(len(posted), 1)
         self.assertTrue(posted[0]["path"].endswith("/pulls/1/comments/21/replies"))
         body = posted[0]["fields"]["body"]
-        self.assertTrue(body.startswith("<!-- lc -->\n<!-- lc:completes=21 -->"))
+        self.assertTrue(body.startswith("AUTOMATED: <!-- lc -->\n<!-- lc:completes=21 -->"))
         self.assertIn(sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip(), body)
         self.assertIn("feat(x): add the thing", body)
+
+    def test_completion_reply_opens_with_the_automated_prefix(self):
+        self.open_pr_then_seed(issue_comments=[self.ack(31, "2000-01-01T00:00:00Z")], review_comments=[], reviews=[])
+
+        self.run_script("open-pr.py")
+
+        self.assertTrue(self.replies()[0]["fields"]["body"].startswith("AUTOMATED: <!-- lc -->"))
+
+    def test_reply_stays_in_thread_when_the_root_is_the_authenticated_login(self):
+        old = "2000-01-01T00:00:00Z"
+        self.open_pr_then_seed(
+            issue_comments=[],
+            review_comments=[self.root_comment(70, "operator"), self.ack(71, old, reply_to=70, login="lc-bot")],
+            reviews=[],
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        posted = self.replies()
+        self.assertEqual(len(posted), 1)
+        self.assertTrue(posted[0]["path"].endswith("/pulls/1/comments/71/replies"))
+
+    def test_reply_goes_top_level_when_the_root_is_someone_else(self):
+        old = "2000-01-01T00:00:00Z"
+        self.open_pr_then_seed(
+            issue_comments=[],
+            review_comments=[self.root_comment(80, "reviewer"), self.ack(81, old, reply_to=80)],
+            reviews=[],
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        posted = self.replies()
+        self.assertEqual(len(posted), 1)
+        self.assertTrue(posted[0]["path"].endswith("/issues/1/comments"))
+        body = posted[0]["fields"]["body"]
+        self.assertTrue(body.startswith("AUTOMATED:"))
+        self.assertIn("lc:completes=81", body)
+        self.assertIn("https://github.com/o/r/pull/1#discussion_r81", body)
+        self.assertFalse([c for c in self.gh_calls() if "/replies" in c["path"]])
+
+    def test_mixed_threads_reply_in_one_and_top_level_in_the_other(self):
+        old = "2000-01-01T00:00:00Z"
+        self.open_pr_then_seed(
+            issue_comments=[],
+            review_comments=[
+                self.root_comment(70, "operator"),
+                self.ack(71, old, reply_to=70),
+                self.root_comment(80, "reviewer"),
+                self.ack(81, old, reply_to=80),
+            ],
+            reviews=[],
+        )
+
+        self.run_script("open-pr.py")
+
+        posted = self.replies()
+        self.assertEqual(len(posted), 2)
+        self.assertEqual(sum(1 for c in posted if c["path"].endswith("/replies")), 1)
+        self.assertEqual(sum(1 for c in posted if c["path"].endswith("/issues/1/comments")), 1)
+
+    def test_unreadable_root_or_login_posts_top_level(self):
+        old = "2000-01-01T00:00:00Z"
+        self.open_pr_then_seed(
+            issue_comments=[],
+            review_comments=[self.ack(91, old, reply_to=999)],
+            reviews=[],
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.replies()[0]["path"].endswith("/issues/1/comments"))
+
+        state = self.read_gh_state()
+        state.update(
+            review_comments=[self.root_comment(70, "operator"), self.ack(71, old, reply_to=70)],
+            user_error=True,
+        )
+        self.gh_state = state
+        self.write_gh_state()
+        (self.stub / "gh-calls.jsonl").unlink()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.replies()[0]["path"].endswith("/issues/1/comments"))
 
     def test_top_level_acknowledgement_gets_a_top_level_reply(self):
         self.open_pr_then_seed(
