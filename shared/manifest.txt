@@ -1,4 +1,3 @@
-squash-procedure: amend-writer build-workflow feature-writer implement-features scope-and-code spec-writer write-code
 gh-api-raw-field: handle-feedback review-code review-features review-workflow
 long-running-commands: implement-features resolve-conflict scope-and-code write-code
 spec-amendment-record: build-workflow implement-features write-code
