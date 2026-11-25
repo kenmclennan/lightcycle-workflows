@@ -11,7 +11,6 @@ import gitproc
 BODY_OPEN = "<!-- lc:body -->"
 BODY_CLOSE = "<!-- /lc:body -->"
 CODE_PHASES = ("code", "change")
-PIPELINE_WORDS = ("specs", "spec", "driver", "findings", "finding", "carve-out", "routed")
 ROBOT = "\U0001F916"
 
 
@@ -151,31 +150,6 @@ def code_message(message):
             line = "Follow-ups noticed:" + line[len("Also found, out of scope:"):]
         lines.append(line)
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
-
-
-def pipeline_hits(text, stage):
-    words = list(PIPELINE_WORDS)
-    if stage:
-        words.append(stage)
-    pattern = re.compile(
-        r"(?<![\w-])(" + "|".join(re.escape(w) for w in words) + r")(?![\w-])", re.IGNORECASE
-    )
-    hits = []
-    for number, line in enumerate(text.splitlines(), 1):
-        for match in pattern.finditer(line):
-            hits.append(f"{match.group(1)!r} on line {number}")
-    return hits
-
-
-def check_pipeline_words(stage):
-    message = code_message(git("log", "-1", "--format=%B"))
-    hits = pipeline_hits(message, stage)
-    if hits:
-        raise Fail(
-            "the commit message is the PR description and must not use pipeline words: "
-            + "; ".join(hits)
-            + ". Reword the commit message in plain words, then re-run."
-        )
 
 
 def managed_block(quote, stage, code):
@@ -483,9 +457,6 @@ def main():
         raise Fail(
             f"the worktree has uncommitted changes in {paths}; commit or discard them, then re-run"
         )
-
-    if code:
-        check_pipeline_words(stage)
 
     existing = find_pr(owner, repo, branch)
     if existing:

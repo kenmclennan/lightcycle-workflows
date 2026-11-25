@@ -103,33 +103,6 @@ class OpenPrTest(ScriptCase):
         self.assertNotIn("unit suite", body)
         self.assertNotIn("packaged app\n- ", body)
 
-    def test_pipeline_word_in_the_commit_message_fails_the_stage(self):
-        self.message_branch("feat(x): add the thing\n\nThis is routed to the reviewer.")
-
-        result = self.run_script("open-pr.py")
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "")
-        self.assertIn("routed", result.stderr)
-        self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
-        remote = sh("git", "ls-remote", "--heads", "origin", "feat/x", cwd=self.work).stdout
-        self.assertEqual(remote, "")
-
-    def test_pipeline_word_check_names_the_previous_stage(self):
-        self.message_branch("feat(x): add the thing\n\nBuilt in write-code.")
-
-        result = self.run_script("open-pr.py")
-
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("write-code", result.stderr)
-
-    def test_pipeline_word_check_is_whole_word(self):
-        self.message_branch("feat(x): add the thing\n\nA specification of respect, a finding-aid and a spec-like thing.")
-
-        result = self.run_script("open-pr.py")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-
     def test_resync_leaves_a_body_without_markers_alone(self):
         self.feature_branch()
         self.assertEqual(self.run_script("open-pr.py").returncode, 0)
