@@ -73,6 +73,23 @@ elif method == "GET" and re.search(r"/pulls/\\d+/comments$", bare):
     out(state.get("review_comments", []))
 elif method == "GET" and re.search(r"/pulls/\\d+/reviews$", bare):
     out(state.get("reviews", []))
+elif method == "POST" and bare == "graphql":
+    query = fields.get("query", "")
+    if "addReaction" in query and state.get("reaction_error"):
+        sys.stderr.write("gh: HTTP 500\\n"); sys.exit(1)
+    if "resolveReviewThread" in query:
+        out({"data": {"resolveReviewThread": {"thread": {"id": fields.get("thread"), "isResolved": True}}}})
+    elif "reviewThreads" in query:
+        nodes = [{"id": t["id"], "comments": {"nodes": [{"databaseId": i} for i in t["comments"]]}}
+                 for t in state.get("review_threads", [])]
+        out({"data": {"repository": {"pullRequest": {"reviewThreads": {
+            "pageInfo": {"hasNextPage": state.get("threads_more", False)}, "nodes": nodes}}}}})
+    else:
+        out({"data": {}})
+elif method == "POST" and bare.endswith("/reactions"):
+    if state.get("reaction_error"):
+        sys.stderr.write("gh: HTTP 500\\n"); sys.exit(1)
+    out({"id": 998})
 elif method == "POST":
     out({"id": 999})
 else:
@@ -130,7 +147,7 @@ class ScriptCase(unittest.TestCase):
             "pass": "p1",
             "phase": "code",
             "valid_outcomes": ["done", "conflicted"],
-            "inputs": {"previous": {"stage": "write-code", "report": "built the thing"}},
+            "inputs": {"previous": {"stage": "write-code", "report": "built the thing"}, "item": []},
             "runs": [{"pass": "p1", "phase": "code", "pr": None}],
         }
         self.write_lc_show()

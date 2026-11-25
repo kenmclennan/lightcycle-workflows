@@ -22,7 +22,8 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(fields["head"], "feat/x")
         self.assertTrue(fields["body"].startswith(f"<!-- lc:item={self.item} -->\n<!-- lc:body -->"))
         self.assertIn("body line", fields["body"])
-        self.assertIn("## Closing note from write-code\n\nbuilt the thing", fields["body"])
+        self.assertNotIn("Closing note", fields["body"])
+        self.assertNotIn("built the thing", fields["body"])
         self.assertTrue(fields["body"].endswith("<!-- /lc:body -->"))
         self.assertEqual(self.lc_calls(), [["attach", self.item, "pr", "https://github.com/o/r/pull/1"]])
         remote = sh("git", "ls-remote", "--heads", "origin", "feat/x", cwd=self.work).stdout
@@ -50,12 +51,84 @@ class OpenPrTest(ScriptCase):
         self.assertTrue(after["body"].startswith("human above\n"))
         self.assertTrue(after["body"].endswith("\nhuman below"))
         self.assertIn("new body", after["body"])
-        self.assertIn("second round note", after["body"])
+        self.assertNotIn("second round note", after["body"])
         self.assertNotIn("body line", after["body"])
         self.assertNotIn("built the thing", after["body"])
         self.assertEqual(after["title"], "feat(x): redesigned thing")
         creates = [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith("/pulls")]
         self.assertEqual(len(creates), 1)
+
+    def test_spec_phase_pr_keeps_the_closing_note(self):
+        self.lc_show["phase"] = "spec"
+        self.lc_show["runs"][0]["phase"] = "spec"
+        self.write_lc_show()
+        self.feature_branch()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        body = self.read_gh_state()["pulls"][0]["body"]
+        self.assertIn("## Closing note from write-code\n\nbuilt the thing", body)
+
+    def message_branch(self, message):
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        self.commit("feature.txt", "one\n", message)
+
+    def test_follow_ups_noticed_replaces_the_out_of_scope_label_in_the_body_only(self):
+        self.message_branch("feat(x): add the thing\n\nbody line\n\nAlso found, out of scope: a stale label in util.")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        body = self.read_gh_state()["pulls"][0]["body"]
+        self.assertIn("Follow-ups noticed: a stale label in util.", body)
+        self.assertNotIn("Also found", body)
+        pushed = sh("git", "log", "-1", "--format=%B", "origin/feat/x", cwd=self.work).stdout
+        self.assertIn("Also found, out of scope: a stale label in util.", pushed)
+
+    def test_tested_blocks_are_dropped_and_check_by_hand_is_kept(self):
+        self.message_branch(
+            "fix(deps): bump x to 3.0.7\n\nBumped x.\n\nTested:\n- unit suite\n  - nested\n\n"
+            "Not tested here:\n- the packaged app\n\nCheck by hand: open the packaged app."
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        body = self.read_gh_state()["pulls"][0]["body"]
+        self.assertIn("Bumped x.", body)
+        self.assertIn("Check by hand: open the packaged app.", body)
+        self.assertNotIn("Tested:", body)
+        self.assertNotIn("Not tested here", body)
+        self.assertNotIn("unit suite", body)
+        self.assertNotIn("packaged app\n- ", body)
+
+    def test_pipeline_word_in_the_commit_message_fails_the_stage(self):
+        self.message_branch("feat(x): add the thing\n\nThis is routed to the reviewer.")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("routed", result.stderr)
+        self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
+        remote = sh("git", "ls-remote", "--heads", "origin", "feat/x", cwd=self.work).stdout
+        self.assertEqual(remote, "")
+
+    def test_pipeline_word_check_names_the_previous_stage(self):
+        self.message_branch("feat(x): add the thing\n\nBuilt in write-code.")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("write-code", result.stderr)
+
+    def test_pipeline_word_check_is_whole_word(self):
+        self.message_branch("feat(x): add the thing\n\nA specification of respect, a finding-aid and a spec-like thing.")
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_resync_leaves_a_body_without_markers_alone(self):
         self.feature_branch()
@@ -413,29 +486,47 @@ class OpenPrNonMainBaseTest(ScriptCase):
 
 
 class CompletionRepliesTest(ScriptCase):
-    def ack(self, cid, stamp, extra="", reply_to=None, login="operator"):
+    def decision(self, key, sha, decision="rework", path=None, watched="LC-1.3"):
+        value = {"decision": decision, "sha": sha, "path": path, "watched": watched}
+        return {"name": "feedback-decision", "label": key, "value": json.dumps(value)}
+
+    def completed(self, key, sha="a" * 40):
+        return {"name": "feedback-completed", "label": key, "value": sha}
+
+    def inline(self, cid, login="operator", reply_to=None):
         comment = {
             "id": cid,
-            "created_at": stamp,
+            "created_at": "2000-01-01T00:00:00Z",
             "user": {"login": login},
             "html_url": f"https://github.com/o/r/pull/1#discussion_r{cid}",
-            "body": f"<!-- lc -->\n<!-- lc:decision=rework -->\n{extra}ack",
+            "body": "bump it to 3.0.7",
         }
         if reply_to:
             comment["in_reply_to_id"] = reply_to
         return comment
 
-    def root_comment(self, cid, login):
-        return {"id": cid, "created_at": "2000-01-01T00:00:00Z", "user": {"login": login}, "body": "root"}
-
-    def open_pr_then_seed(self, **lists):
+    def seed(self, records, **lists):
         self.feature_branch()
         self.assertEqual(self.run_script("open-pr.py").returncode, 0)
         state = self.read_gh_state()
         state.update(lists)
         self.gh_state = state
         self.write_gh_state()
+        self.lc_show["inputs"]["item"] = records
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/1"
+        self.write_lc_show()
         (self.stub / "gh-calls.jsonl").unlink()
+        (self.stub / "lc-calls.jsonl").unlink(missing_ok=True)
+        self.assertTrue(
+            records and any(r["name"] == "feedback-decision" for r in records),
+            "the seeded decision must be in the stubbed inputs.item",
+        )
+
+    def head(self):
+        return sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+
+    def posts(self, suffix):
+        return [c for c in self.gh_calls() if c["method"] == "POST" and c["path"].endswith(suffix)]
 
     def replies(self):
         return [
@@ -443,40 +534,57 @@ class CompletionRepliesTest(ScriptCase):
             if c["method"] == "POST" and ("/replies" in c["path"] or c["path"].endswith("/issues/1/comments"))
         ]
 
-    def test_mixed_case_answers_only_the_eligible_acknowledgement(self):
-        old, future = "2000-01-01T00:00:00Z", "2999-01-01T00:00:00Z"
-        self.open_pr_then_seed(
-            issue_comments=[
-                self.ack(11, old),
-                {"id": 12, "created_at": old, "body": "<!-- lc -->\n<!-- lc:completes=11 -->\ndone"},
+    def completions(self):
+        return [c for c in self.lc_calls() if "feedback-completed" in c]
+
+    def test_mixed_case_completes_only_the_decisions_with_a_new_push(self):
+        old = "b" * 40
+        self.seed(
+            [
+                self.decision("mention:11", old),
+                self.completed("mention:11"),
+                self.decision("mention:12", "HEAD-PLACEHOLDER"),
+                self.decision("inline:21", old, path="feature.txt"),
             ],
-            review_comments=[self.ack(21, old), self.ack(22, future)],
+            issue_comments=[],
+            review_comments=[self.inline(21, login="operator")],
             reviews=[],
         )
+        records = self.lc_show["inputs"]["item"]
+        records[2] = self.decision("mention:12", self.head())
+        self.write_lc_show()
 
         result = self.run_script("open-pr.py")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        posted = self.replies()
-        self.assertEqual(len(posted), 1)
-        self.assertTrue(posted[0]["path"].endswith("/pulls/1/comments/21/replies"))
-        body = posted[0]["fields"]["body"]
-        self.assertTrue(body.startswith("AUTOMATED: <!-- lc -->\n<!-- lc:completes=21 -->"))
-        self.assertIn(sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip(), body)
-        self.assertIn("feat(x): add the thing", body)
+        self.assertEqual([c[4] for c in self.completions()], ["inline:21"])
+        self.assertEqual(len(self.replies()), 1)
+        self.assertTrue(self.replies()[0]["path"].endswith("/pulls/1/comments/21/replies"))
+        reactions = [c for c in self.gh_calls() if c["path"].endswith("/reactions")]
+        self.assertEqual(len(reactions), 1)
+        self.assertTrue(reactions[0]["path"].endswith("/pulls/comments/21/reactions"))
 
-    def test_completion_reply_opens_with_the_automated_prefix(self):
-        self.open_pr_then_seed(issue_comments=[self.ack(31, "2000-01-01T00:00:00Z")], review_comments=[], reviews=[])
+    def test_completion_reply_opens_with_the_robot_emoji(self):
+        self.seed(
+            [self.decision("inline:31", "b" * 40, path="feature.txt")],
+            issue_comments=[],
+            review_comments=[self.inline(31)],
+            reviews=[],
+        )
 
         self.run_script("open-pr.py")
 
-        self.assertTrue(self.replies()[0]["fields"]["body"].startswith("AUTOMATED: <!-- lc -->"))
+        body = self.replies()[0]["fields"]["body"]
+        self.assertTrue(body.startswith("\U0001F916 <!-- lc -->\n"))
+        self.assertNotIn("lc:completes", body)
+        self.assertNotIn("does not verify", body)
+        self.assertNotIn("AUTOMATED", body)
 
     def test_reply_stays_in_thread_when_the_root_is_the_authenticated_login(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
+        self.seed(
+            [self.decision("inline:71", "b" * 40, path="feature.txt")],
             issue_comments=[],
-            review_comments=[self.root_comment(70, "operator"), self.ack(71, old, reply_to=70, login="lc-bot")],
+            review_comments=[self.inline(70, "operator"), self.inline(71, "lc-bot", reply_to=70)],
             reviews=[],
         )
 
@@ -488,11 +596,12 @@ class CompletionRepliesTest(ScriptCase):
         self.assertTrue(posted[0]["path"].endswith("/pulls/1/comments/71/replies"))
 
     def test_reply_goes_top_level_when_the_root_is_someone_else(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
+        self.seed(
+            [self.decision("inline:81", "b" * 40, path="feature.txt")],
             issue_comments=[],
-            review_comments=[self.root_comment(80, "reviewer"), self.ack(81, old, reply_to=80)],
+            review_comments=[self.inline(80, "reviewer"), self.inline(81, reply_to=80)],
             reviews=[],
+            review_threads=[{"id": "T9", "comments": [80, 81]}],
         )
 
         result = self.run_script("open-pr.py")
@@ -502,22 +611,26 @@ class CompletionRepliesTest(ScriptCase):
         self.assertEqual(len(posted), 1)
         self.assertTrue(posted[0]["path"].endswith("/issues/1/comments"))
         body = posted[0]["fields"]["body"]
-        self.assertTrue(body.startswith("AUTOMATED:"))
-        self.assertIn("lc:completes=81", body)
+        self.assertTrue(body.startswith("\U0001F916"))
         self.assertIn("https://github.com/o/r/pull/1#discussion_r81", body)
         self.assertFalse([c for c in self.gh_calls() if "/replies" in c["path"]])
+        self.assertFalse([c for c in self.gh_calls() if "resolveReviewThread" in c["fields"].get("query", "")])
 
     def test_mixed_threads_reply_in_one_and_top_level_in_the_other(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
+        self.seed(
+            [
+                self.decision("inline:71", "b" * 40, path="feature.txt"),
+                self.decision("inline:81", "b" * 40, path="feature.txt"),
+            ],
             issue_comments=[],
             review_comments=[
-                self.root_comment(70, "operator"),
-                self.ack(71, old, reply_to=70),
-                self.root_comment(80, "reviewer"),
-                self.ack(81, old, reply_to=80),
+                self.inline(70, "operator"),
+                self.inline(71, reply_to=70),
+                self.inline(80, "reviewer"),
+                self.inline(81, reply_to=80),
             ],
             reviews=[],
+            review_threads=[{"id": "T1", "comments": [70, 71]}],
         )
 
         self.run_script("open-pr.py")
@@ -528,10 +641,10 @@ class CompletionRepliesTest(ScriptCase):
         self.assertEqual(sum(1 for c in posted if c["path"].endswith("/issues/1/comments")), 1)
 
     def test_unreadable_root_or_login_posts_top_level(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
+        self.seed(
+            [self.decision("inline:91", "b" * 40, path="feature.txt")],
             issue_comments=[],
-            review_comments=[self.ack(91, old, reply_to=999)],
+            review_comments=[self.inline(91, reply_to=999)],
             reviews=[],
         )
 
@@ -542,11 +655,13 @@ class CompletionRepliesTest(ScriptCase):
 
         state = self.read_gh_state()
         state.update(
-            review_comments=[self.root_comment(70, "operator"), self.ack(71, old, reply_to=70)],
+            review_comments=[self.inline(70, "operator"), self.inline(71, reply_to=70)],
             user_error=True,
         )
         self.gh_state = state
         self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [self.decision("inline:71", "b" * 40, path="feature.txt")]
+        self.write_lc_show()
         (self.stub / "gh-calls.jsonl").unlink()
 
         result = self.run_script("open-pr.py")
@@ -554,9 +669,10 @@ class CompletionRepliesTest(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.replies()[0]["path"].endswith("/issues/1/comments"))
 
-    def test_top_level_acknowledgement_gets_a_top_level_reply(self):
-        self.open_pr_then_seed(
-            issue_comments=[self.ack(31, "2000-01-01T00:00:00Z")],
+    def test_top_level_request_gets_a_reaction_and_no_reply(self):
+        self.seed(
+            [self.decision("mention:31", "b" * 40)],
+            issue_comments=[{"id": 31, "user": {"login": "operator"}, "body": "@lc do it"}],
             review_comments=[],
             reviews=[],
         )
@@ -564,24 +680,28 @@ class CompletionRepliesTest(ScriptCase):
         result = self.run_script("open-pr.py")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        posted = self.replies()
-        self.assertEqual(len(posted), 1)
-        self.assertTrue(posted[0]["path"].endswith("/issues/1/comments"))
+        self.assertEqual(self.replies(), [])
+        self.assertEqual(len(self.posts("/issues/comments/31/reactions")), 1)
+        self.assertEqual(self.posts("/issues/comments/31/reactions")[0]["fields"], {"content": "+1"})
+        self.assertEqual(len(self.completions()), 1)
 
-    def test_review_body_acknowledgement_is_answered(self):
-        review = {"id": 41, "submitted_at": "2000-01-01T00:00:00Z", "body": "<!-- lc:decision=rework -->"}
-        self.open_pr_then_seed(issue_comments=[], review_comments=[], reviews=[review])
+    def test_review_request_gets_a_reaction_and_no_reply(self):
+        review = {"id": 41, "node_id": "PRR_41", "body": "please change"}
+        self.seed([self.decision("review:41", "b" * 40)], issue_comments=[], review_comments=[], reviews=[review])
 
-        self.run_script("open-pr.py")
+        result = self.run_script("open-pr.py")
 
-        posted = self.replies()
-        self.assertEqual(len(posted), 1)
-        self.assertIn("lc:completes=41", posted[0]["fields"]["body"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.replies(), [])
+        mutations = [c for c in self.gh_calls() if "addReaction" in c["fields"].get("query", "")]
+        self.assertEqual(len(mutations), 1)
+        self.assertEqual(mutations[0]["fields"]["subject"], "PRR_41")
+        self.assertEqual(mutations[0]["fields"]["content"], "THUMBS_UP")
 
-    def test_all_answered_posts_nothing(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
-            issue_comments=[self.ack(51, old), {"id": 52, "created_at": old, "body": "<!-- lc:completes=51 -->"}],
+    def test_all_completed_posts_nothing(self):
+        self.seed(
+            [self.decision("mention:51", "b" * 40), self.completed("mention:51")],
+            issue_comments=[],
             review_comments=[],
             reviews=[],
         )
@@ -589,18 +709,188 @@ class CompletionRepliesTest(ScriptCase):
         self.run_script("open-pr.py")
 
         self.assertEqual(self.replies(), [])
+        self.assertEqual([c for c in self.gh_calls() if c["method"] == "POST"], [])
+        self.assertEqual(self.lc_calls(), [])
 
-    def test_none_answered_replies_to_every_eligible(self):
-        old = "2000-01-01T00:00:00Z"
-        self.open_pr_then_seed(
-            issue_comments=[self.ack(61, old), self.ack(62, old)],
-            review_comments=[self.ack(63, old)],
+    def test_none_completed_completes_every_eligible(self):
+        self.seed(
+            [
+                self.decision("mention:61", "b" * 40),
+                self.decision("mention:62", "b" * 40),
+                self.decision("inline:63", "b" * 40, path="feature.txt"),
+            ],
+            issue_comments=[],
+            review_comments=[self.inline(63)],
             reviews=[],
         )
 
         self.run_script("open-pr.py")
 
-        self.assertEqual(len(self.replies()), 3)
+        self.assertEqual(len(self.completions()), 3)
+
+    def test_decision_without_a_new_push_is_not_completed(self):
+        self.seed([self.decision("mention:71", "x")], issue_comments=[], review_comments=[], reviews=[])
+        self.lc_show["inputs"]["item"] = [self.decision("mention:71", self.head())]
+        self.write_lc_show()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([c for c in self.gh_calls() if c["method"] == "POST"], [])
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_decision_with_a_completion_record_is_not_completed_again(self):
+        self.seed(
+            [self.decision("inline:72", "b" * 40, path="feature.txt"), self.completed("inline:72")],
+            issue_comments=[],
+            review_comments=[self.inline(72)],
+            reviews=[],
+        )
+
+        self.run_script("open-pr.py")
+
+        self.assertEqual([c for c in self.gh_calls() if c["method"] == "POST"], [])
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_answer_and_ignore_decisions_are_never_completed(self):
+        self.seed(
+            [
+                self.decision("mention:73", "b" * 40, decision="answer", watched=None),
+                self.decision("mention:74", "b" * 40, decision="ignore", watched=None),
+            ],
+            issue_comments=[],
+            review_comments=[],
+            reviews=[],
+        )
+
+        self.run_script("open-pr.py")
+
+        self.assertEqual(self.lc_calls(), [])
+
+    def test_completion_does_not_post_twice_after_a_partial_failure(self):
+        short = None
+        self.seed(
+            [self.decision("inline:75", "b" * 40, path="feature.txt")],
+            issue_comments=[],
+            review_comments=[self.inline(74, "operator"), self.inline(75, "operator", reply_to=74)],
+            reviews=[],
+        )
+        short = self.head()[:7]
+        state = self.read_gh_state()
+        state["review_comments"].append({
+            "id": 76,
+            "in_reply_to_id": 74,
+            "user": {"login": "operator"},
+            "body": f"\U0001F916 <!-- lc -->\nDone in {short}: feat(x): add the thing.",
+        })
+        self.gh_state = state
+        self.write_gh_state()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.replies(), [])
+        self.assertEqual(len(self.completions()), 1)
+
+    def test_inline_completion_resolves_the_thread_and_records_it(self):
+        self.seed(
+            [self.decision("inline:77", "b" * 40, path="feature.txt")],
+            issue_comments=[],
+            review_comments=[self.inline(77, "operator")],
+            reviews=[],
+            review_threads=[{"id": "T-77", "comments": [77]}],
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.gh_calls()
+        order = [
+            "reply" if "/replies" in c["path"] else
+            "resolve" if "resolveReviewThread" in c["fields"].get("query", "") else
+            "react" if c["path"].endswith("/reactions") else None
+            for c in calls if c["method"] == "POST"
+        ]
+        self.assertEqual([o for o in order if o], ["reply", "resolve", "react"])
+        resolve = next(c for c in calls if "resolveReviewThread" in c["fields"].get("query", ""))
+        self.assertEqual(resolve["fields"]["thread"], "T-77")
+        self.assertEqual(self.completions(), [["attach", self.item, "feedback-completed", "--label", "inline:77", self.head()]])
+        self.assertIn("posted 1 completion reply", json.loads(result.stdout)["note"])
+
+    def test_resolve_is_skipped_when_the_thread_is_not_found(self):
+        self.seed(
+            [self.decision("inline:78", "b" * 40, path="feature.txt")],
+            issue_comments=[],
+            review_comments=[self.inline(78, "operator")],
+            reviews=[],
+            review_threads=[],
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("not found", json.loads(result.stdout)["note"])
+        self.assertFalse([c for c in self.gh_calls() if "resolveReviewThread" in c["fields"].get("query", "")])
+        self.assertEqual(len(self.completions()), 1)
+
+    def test_a_failed_reaction_does_not_fail_the_stage(self):
+        self.seed(
+            [self.decision("mention:79", "b" * 40)],
+            issue_comments=[],
+            review_comments=[],
+            reviews=[],
+            reaction_error=True,
+        )
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("reaction on mention:79 failed", json.loads(result.stdout)["note"])
+        self.assertEqual(len(self.completions()), 1)
+
+    def test_replay_of_lightcycle_1287_one_inline_request(self):
+        self.feature_branch()
+        self.assertEqual(self.run_script("open-pr.py").returncode, 0)
+        before = self.head()
+        self.commit("deps.txt", "x 3.0.7\n", "chore(deps): bump x to 3.0.7")
+        state = self.read_gh_state()
+        state.update(
+            issue_comments=[],
+            review_comments=[self.inline(1287, "operator")],
+            reviews=[],
+            review_threads=[{"id": "T-1287", "comments": [1287]}],
+        )
+        self.gh_state = state
+        self.write_gh_state()
+        self.lc_show["inputs"]["item"] = [self.decision("inline:1287", before, path="feature.txt")]
+        self.lc_show["runs"][0]["pr"] = "https://github.com/o/r/pull/1"
+        self.write_lc_show()
+        (self.stub / "gh-calls.jsonl").unlink()
+
+        result = self.run_script("open-pr.py")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.gh_calls()
+        short = self.head()[:7]
+        self.assertEqual([c for c in calls if c["path"].endswith("/issues/1/comments") and c["method"] == "POST"], [])
+        replies = [c for c in calls if c["path"].endswith("/pulls/1/comments/1287/replies")]
+        self.assertEqual(len(replies), 1)
+        text = replies[0]["fields"]["body"]
+        self.assertTrue(text.startswith("\U0001F916 <!-- lc -->"))
+        self.assertIn(f"Done in {short}: chore(deps): bump x to 3.0.7.", text)
+        resolves = [c for c in calls if "resolveReviewThread" in c["fields"].get("query", "")]
+        self.assertEqual(len(resolves), 1)
+        thumbs = [c for c in calls if c["path"].endswith("/pulls/comments/1287/reactions")]
+        self.assertEqual(len(thumbs), 1)
+        self.assertEqual(len(self.completions()), 1)
+
+        print("\n--- PR conversation (replay of lightcycle#1287) ---")
+        print("operator (inline on feature.txt): bump it to 3.0.7")
+        print("  reaction: eyes (from handle-feedback)")
+        print(f"  lc reply: {text.splitlines()[0]} / {text.splitlines()[1]}")
+        print("  thread resolved")
+        print("  reaction: +1")
+        print("---")
 
 
 if __name__ == "__main__":
