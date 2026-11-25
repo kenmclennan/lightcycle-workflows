@@ -220,6 +220,26 @@ class OpenPrTest(ScriptCase):
         self.assertEqual(sh("git", "status", "--porcelain", cwd=self.work).stdout, "")
         self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
 
+    def test_single_commit_repeating_a_base_subject_is_refused(self):
+        self.commit("main.txt", "main\n", "feat(y): earlier merged change\n\nold body")
+        sh("git", "push", "origin", "main", cwd=self.work)
+        tip = sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+        sh("git", "checkout", "-b", "feat/x", cwd=self.work)
+        (self.work / "feature.txt").write_text("one\n")
+        sh("git", "add", "feature.txt", cwd=self.work)
+        sh("git", "commit", "--amend", "--no-edit", cwd=self.work)
+        amended = sh("git", "rev-parse", "HEAD", cwd=self.work).stdout.strip()
+        self.assertNotEqual(amended, tip)
+
+        result = self.run_script("open-pr.py")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn(amended, result.stderr)
+        self.assertIn(tip, result.stderr)
+        self.assertIn("feat(y): earlier merged change", result.stderr)
+        self.assertFalse([c for c in self.gh_calls() if c["method"] == "POST"])
+
     def test_origin_default_moved_after_clone_is_followed(self):
         self.feature_branch()
         sh("git", "branch", "-m", "main", "trunk", cwd=self.origin)

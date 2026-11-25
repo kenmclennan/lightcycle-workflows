@@ -397,6 +397,22 @@ def refuse_merge_commits(base):
         )
 
 
+def refuse_base_subject_repeat(base):
+    commits = git("rev-list", f"{base}..HEAD", check=False).split()
+    if len(commits) != 1:
+        return
+    subject = git("log", "-1", "--format=%s", commits[0])
+    lines = git("log", base, "--fixed-strings", f"--grep={subject}", "--format=%H %s").splitlines()
+    twins = [line.split(" ", 1)[0] for line in lines if line.split(" ", 1)[1:] == [subject]]
+    if twins:
+        raise Fail(
+            f"the branch's one commit {commits[0]} has the subject {subject!r}, which commit "
+            f"{twins[0]} already has on {base}; the squash most likely amended an upstream commit "
+            "and carries its old message. Find the pre-amend commit with `git reflog`, run "
+            "`git reset --keep <sha>` to it, then re-run."
+        )
+
+
 def rebase_onto_base(valid_outcomes):
     git("fetch", "origin")
     base = base_ref()
@@ -457,6 +473,8 @@ def main():
         raise Fail(
             f"the worktree has uncommitted changes in {paths}; commit or discard them, then re-run"
         )
+
+    refuse_base_subject_repeat(base_ref())
 
     existing = find_pr(owner, repo, branch)
     if existing:
