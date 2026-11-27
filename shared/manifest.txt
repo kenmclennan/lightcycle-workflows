@@ -14,3 +14,6 @@ rework-request: spec-writer design-workflow write-code feature-writer implement-
 static-checks: implement-features scope-and-code write-code
 ci-failed-rework: write-code implement-features feature-writer amend-writer build-workflow scope-and-code audit-engine-pin
 set-work-aside: build-workflow implement-features scope-and-code write-code
+driver-check-write: spec-writer design-workflow
+driver-check-record: write-code build-workflow
+driver-check-review: review-code review-workflow

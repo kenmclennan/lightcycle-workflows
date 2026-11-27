@@ -1,0 +1,1 @@
+An Acceptance bullet marked `(driver, at review)` is the driver's to measure, so a PR body line `pending driver measurement` against it is not missing evidence and not a failure; fail only if such a bullet is claimed as measured with no evidence, or if a bullet a worker could run is marked that way.
