@@ -1,6 +1,6 @@
 # small-change
 
-**One item, one id, one phase, one PR.** `scope-and-code` reads the brief straight off the item's own description - no spec, no spec PR - decides the approach, and writes the code. `done` when the change is built; `too-big` when the brief needs more than a single-PR, no-spec lane can carry. From there it's the same generic PR/CI machinery every other bundle here already has: open a PR, watch CI, human reviews and merges, cleanup closes the item.
+**One item, one id, one phase, one PR.** `scope-and-code` reads the brief straight off the item's own description - no spec, no spec PR - decides the approach, and writes the code. `done` when the change is built; `too-big` when the brief needs more than a single-PR, no-spec lane can carry. `not-needed` when reading the brief against the base branch shows its premise is false and nothing is owed; it routes to a human gate, which confirms and closes the item with nothing delivered, or sends it back. From there it's the same generic PR/CI machinery every other bundle here already has: open a PR, watch CI, human reviews and merges, cleanup closes the item.
 
 **Use it when** a change is small and low-risk enough that a written spec and a separate agent review round would cost more than they'd ever catch - file it with `lc new item "<title>" --workflow lightcycle/small-change --repo <this repo>`.
 
@@ -16,6 +16,9 @@ Node shape shows who runs each stage: `[ agent-step ]` an ephemeral agent claims
 flowchart TD
     repo(["repo"]) --> SAC["scope-and-code"]
     SAC -->|too-big| RS{{"review-scope"}}
+    SAC -->|not-needed| RNN{{"review-not-needed"}}
+    RNN -->|confirmed| NND([" nothing delivered"])
+    RNN -->|sent-back| SAC
     subgraph P ["change phase (this repo)"]
         SAC --> OP["open-pr"] --> WCI["watch-ci"] --> AM{{"await-merge"}}
         WCI -->|ci-failed| SAC
@@ -37,10 +40,11 @@ flowchart TD
 
 | Step | Who | Does |
 | --- | --- | --- |
-| `scope-and-code` | agent | Reads the brief off the item's own description, decides whether it fits one PR with no design review, and writes the code. `too-big` routes to a human rather than building oversized work; on a rework it captures and reconciles a per-file test/step-def inventory so a rework round can't silently drop a test. |
+| `scope-and-code` | agent | Reads the brief off the item's own description, decides whether it fits one PR with no design review, and writes the code. `too-big` routes to a human rather than building oversized work; `not-needed` routes a false-premise brief to a human, with a note naming the path or command that shows nothing is owed; on a rework it captures and reconciles a per-file test/step-def inventory so a rework round can't silently drop a test. |
 | `open-pr` | script | Rebases on the base branch, pushes, opens the PR. |
 | `watch-ci` | agent | Watches CI; routes failing CI and correct review comments back to `scope-and-code` (each capped, then `review-ci`). |
 | `await-merge` | human | Merges the PR, or routes changes/feedback back. |
 | `resolve-conflict` / `review-conflict` | agent / human | Handle a PR that hits a merge conflict (escalating to a human past the cap), who resolves it by hand and re-enters the PR/CI cycle, or abandons the item. |
 | `review-scope` | human | The brief turned out bigger than this lane should carry - decide whether to refile it under `spec-driven`. |
+| `review-not-needed` | human | The coder claims the brief's premise is false and nothing is owed - run the evidence in its note, then confirm (the item closes with nothing delivered) or send it back to `scope-and-code`. |
 | `cleanup` | script, terminal | The item is merged and done. |
