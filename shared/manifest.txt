@@ -13,3 +13,4 @@ base-ref: amend-writer audit-engine-pin build-workflow check-entries design-work
 rework-request: spec-writer design-workflow write-code feature-writer implement-features amend-writer build-workflow scope-and-code guidance-writer audit-engine-pin
 static-checks: implement-features scope-and-code write-code
 ci-failed-rework: write-code implement-features feature-writer amend-writer build-workflow scope-and-code audit-engine-pin
+set-work-aside: build-workflow implement-features scope-and-code write-code

@@ -1,0 +1,1 @@
+To set work aside, never run a bare `git stash` and never drop or pop a stash by its index - the stash stack is shared with other sessions: make a WIP commit on the branch and undo it later with `git reset --soft HEAD~1`.
