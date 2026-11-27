@@ -26,58 +26,63 @@ workspace:
   cleanup  project
 
 phase:
-  scope-and-code    change
-  open-pr           change
-  poll-ci           change
-  watch-ci          change
-  review-ci         change
-  await-merge       change
-  cleanup           change
-  resolve-conflict  change
-  handle-feedback   change
-  review-scope      change
-  review-conflict   change
+  scope-and-code     change
+  open-pr            change
+  poll-ci            change
+  watch-ci           change
+  review-ci          change
+  await-merge        change
+  cleanup            change
+  resolve-conflict   change
+  handle-feedback    change
+  review-scope       change
+  review-not-needed  change
+  review-conflict    change
 
 display:
-  scope-and-code    Coding
-  open-pr           Opening PR
-  poll-ci           Watching CI
-  watch-ci          Reviewing CI result
-  review-ci         CI needs a call
-  await-merge       Review PR
-  cleanup           Tidying up
-  resolve-conflict  Resolving conflict
-  review-conflict   Resolve conflict
-  handle-feedback   Reading feedback
-  review-scope      Rescope change
+  scope-and-code     Coding
+  open-pr            Opening PR
+  poll-ci            Watching CI
+  watch-ci           Reviewing CI result
+  review-ci          CI needs a call
+  await-merge        Review PR
+  cleanup            Tidying up
+  resolve-conflict   Resolving conflict
+  review-conflict    Resolve conflict
+  handle-feedback    Reading feedback
+  review-scope       Rescope change
+  review-not-needed  Confirm nothing is owed
 
 edges:
-  scope-and-code    done           open-pr           primary
-  scope-and-code    too-big        review-scope
-  open-pr           done           poll-ci           primary
-  open-pr           conflicted     resolve-conflict
-  poll-ci           conflicted     resolve-conflict
-  watch-ci          conflicted     resolve-conflict
-  poll-ci           succeeded      watch-ci
-  poll-ci           failed         watch-ci
-  watch-ci          done           await-merge       primary
-  watch-ci          deferred       await-merge
-  watch-ci          retried        poll-ci
-  watch-ci          ci-failed      scope-and-code
-  watch-ci          review-rework  scope-and-code
-  await-merge       merged         cleanup
-  cleanup           done
-  await-merge       changes        scope-and-code
-  await-merge       conflicted     resolve-conflict
-  await-merge       gave-up        review-conflict
-  await-merge       head-moved     poll-ci
-  resolve-conflict  resolved       open-pr           primary
-  resolve-conflict  escalate       review-conflict
-  review-scope      rescoped       scope-and-code
-  review-ci         reviewed
-  handle-feedback   done
-  handle-feedback   rework
-  review-conflict   resolved       open-pr           primary
+  scope-and-code     done           open-pr           primary
+  scope-and-code     too-big        review-scope
+  scope-and-code     not-needed     review-not-needed
+  open-pr            done           poll-ci           primary
+  open-pr            conflicted     resolve-conflict
+  poll-ci            conflicted     resolve-conflict
+  watch-ci           conflicted     resolve-conflict
+  poll-ci            succeeded      watch-ci
+  poll-ci            failed         watch-ci
+  watch-ci           done           await-merge       primary
+  watch-ci           deferred       await-merge
+  watch-ci           retried        poll-ci
+  watch-ci           ci-failed      scope-and-code
+  watch-ci           review-rework  scope-and-code
+  await-merge        merged         cleanup
+  cleanup            done
+  await-merge        changes        scope-and-code
+  await-merge        conflicted     resolve-conflict
+  await-merge        gave-up        review-conflict
+  await-merge        head-moved     poll-ci
+  resolve-conflict   resolved       open-pr           primary
+  resolve-conflict   escalate       review-conflict
+  review-scope       rescoped       scope-and-code
+  review-not-needed  sent-back      scope-and-code
+  review-not-needed  confirmed
+  review-ci          reviewed
+  handle-feedback    done
+  handle-feedback    rework
+  review-conflict    resolved       open-pr           primary
 
 hooks:
   pr_merge              await-merge  merged
