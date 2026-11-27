@@ -1,0 +1,1 @@
+For each spec Acceptance bullet marked `(driver, at review)`, write `pending driver measurement` against it in the commit body (the PR body). Do not claim a result for it and do not leave it unmentioned: the driver measures it at review.
